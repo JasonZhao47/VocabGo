@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "pdf-parse": "npm:pdf-parse@1.1.1",
+    "mammoth": "npm:mammoth@1.6.0",
+    "xlsx": "npm:xlsx@0.18.5",
+    "jszip": "npm:jszip@3.10.1"
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-env --allow-net"
+  }
+}

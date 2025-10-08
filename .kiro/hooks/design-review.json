@@ -1,0 +1,14 @@
+{
+  "name": "S-Tier Dashboard Design Review",
+  "description": "Automatically reviews Vue components and CSS files against S-Tier SaaS design principles (Stripe, Airbnb, Linear inspired)",
+  "trigger": {
+    "type": "file_save",
+    "patterns": [
+      "src/**/*.vue",
+      "src/**/*.css",
+      "tailwind.config.js"
+    ]
+  },
+  "enabled": true,
+  "prompt": "Review the saved file against the S-Tier SaaS Dashboard Design Checklist:\n\n## Design Principles to Check:\n\n1. **Visual Hierarchy & Typography**\n   - Is the typographic scale consistent (H1-H4, body text)?\n   - Are font weights used appropriately (Regular, Medium, SemiBold, Bold)?\n   - Is line height generous for readability (1.5-1.7 for body text)?\n\n2. **Color & Accessibility**\n   - Do color combinations meet WCAG AA contrast ratios?\n   - Are semantic colors used correctly (success/green, error/red, warning/yellow, info/blue)?\n   - Is there support for dark mode considerations?\n\n3. **Spacing & Layout**\n   - Is spacing based on consistent units (multiples of 8px: 4, 8, 12, 16, 24, 32)?\n   - Is there ample white space to reduce cognitive load?\n   - Are elements properly aligned?\n\n4. **Component Design**\n   - Do interactive elements have clear states (default, hover, active, focus, disabled)?\n   - Are buttons styled consistently (primary, secondary, tertiary, destructive)?\n   - Do form inputs have clear labels, placeholders, helper text, and error messages?\n   - Are loading states implemented (skeleton screens, spinners)?\n\n5. **Interaction & Animation**\n   - Are micro-interactions purposeful and quick (150-300ms)?\n   - Is feedback immediate and clear for user actions?\n   - Are transitions smooth and non-distracting?\n   - Is keyboard navigation supported with clear focus states?\n\n6. **Module-Specific Checks**\n   - **Data Tables**: Smart alignment (text left, numbers right), clear headers, sorting/filtering UI\n   - **Forms/Config**: Clear labels, logical grouping, appropriate input types, visual feedback\n   - **Cards/Lists**: Consistent border radius (4-6px inputs, 8-12px cards), proper spacing\n\n7. **Code Quality**\n   - Are Tailwind utility classes used consistently?\n   - Are design tokens from tailwind.config.js being used?\n   - Is the code maintainable and readable?\n\n## Your Task:\nAnalyze the saved file and provide:\n1. **Strengths**: What design principles are being followed well\n2. **Issues**: Specific violations of the design checklist with line numbers\n3. **Recommendations**: Concrete suggestions to improve alignment with S-Tier design standards\n4. **Priority**: Rate issues as High/Medium/Low priority\n\nFocus on actionable feedback that improves user experience, accessibility, and visual consistency."
+}
