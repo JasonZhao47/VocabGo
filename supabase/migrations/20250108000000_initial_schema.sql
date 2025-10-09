@@ -140,8 +140,15 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update queue positions when job status changes
-CREATE TRIGGER trigger_update_queue_positions
-AFTER INSERT OR UPDATE OF status ON jobs
+-- Note: Separate triggers for INSERT and UPDATE to avoid OLD reference error
+CREATE TRIGGER trigger_update_queue_positions_insert
+AFTER INSERT ON jobs
+FOR EACH ROW
+WHEN (NEW.status = 'queued')
+EXECUTE FUNCTION update_queue_positions();
+
+CREATE TRIGGER trigger_update_queue_positions_update
+AFTER UPDATE OF status ON jobs
 FOR EACH ROW
 WHEN (NEW.status = 'queued' OR OLD.status = 'queued')
 EXECUTE FUNCTION update_queue_positions();

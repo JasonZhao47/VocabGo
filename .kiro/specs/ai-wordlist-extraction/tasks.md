@@ -76,7 +76,7 @@
     - Validate cleanliness scores and metrics
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   
-  - [-] 4.5 Write AI agent unit tests
+  - [x] 4.5 Write AI agent unit tests
     - Create unit tests for Extractor and Translator agents with sample inputs
     - Test edge cases (empty text, non-English text, special characters)
     - Validate output formats and constraints

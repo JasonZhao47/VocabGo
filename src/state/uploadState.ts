@@ -1,42 +1,77 @@
 import { reactive, computed } from 'vue'
 
-export type UploadStatus = 'queued' | 'processing' | 'completed'
+// Simplified status for single upload at a time
+export type UploadStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'error'
 
-export interface UploadItem {
-  id: string
-  file: File
-  status: UploadStatus
+// Processing stages
+export type ProcessingStage = 'cleaning' | 'extracting' | 'translating'
+
+export interface WordPair { 
+  en: string
+  zh: string 
 }
 
-export interface WordPair { en: string; zh: string }
+export interface UploadState {
+  status: UploadStatus
+  currentFile: File | null
+  currentResult: WordPair[] | null
+  error: string | null
+  processingStage: ProcessingStage | null
+}
 
-const state = reactive({
-  uploads: [] as UploadItem[],
-  latestWordPairs: [] as WordPair[],
-  latestFilename: '' as string
+const state = reactive<UploadState>({
+  status: 'idle',
+  currentFile: null,
+  currentResult: null,
+  error: null,
+  processingStage: null
 })
 
-export const activeUploadsCount = computed(() => state.uploads.filter(u => u.status !== 'completed').length)
-export const allCompleted = computed(() => state.uploads.length > 0 && state.uploads.every(u => u.status === 'completed'))
+// Computed properties
+export const isUploading = computed(() => state.status === 'uploading')
+export const isProcessing = computed(() => state.status === 'processing')
+export const isCompleted = computed(() => state.status === 'completed')
+export const hasError = computed(() => state.status === 'error')
+export const canUpload = computed(() => state.status === 'idle' || state.status === 'completed' || state.status === 'error')
 
-export function queueFiles(files: File[]) {
-  for (const file of files) {
-    state.uploads.push({ id: crypto.randomUUID(), file, status: 'queued' })
-  }
-  processQueue()
+// State management functions
+export function startUpload(file: File) {
+  state.status = 'uploading'
+  state.currentFile = file
+  state.currentResult = null
+  state.error = null
+  state.processingStage = null
 }
 
-function processQueue() {
-  for (const item of state.uploads) {
-    if (item.status === 'queued') {
-      item.status = 'processing'
-      setTimeout(() => {
-        item.status = 'completed'
-        state.latestFilename = item.file.name
-        state.latestWordPairs = Array.from({ length: 3 }).map((_, i) => ({ en: `word${i+1}`, zh: `词${i+1}` }))
-      }, 10)
-    }
-  }
+export function setProcessing(stage?: ProcessingStage) {
+  state.status = 'processing'
+  state.processingStage = stage || 'cleaning'
+}
+
+export function setProcessingStage(stage: ProcessingStage) {
+  state.processingStage = stage
+}
+
+export function setCompleted(wordPairs: WordPair[]) {
+  state.status = 'completed'
+  state.currentResult = wordPairs
+  state.error = null
+  state.processingStage = null
+}
+
+export function setError(errorMessage: string) {
+  state.status = 'error'
+  state.error = errorMessage
+  state.currentResult = null
+  state.processingStage = null
+}
+
+export function reset() {
+  state.status = 'idle'
+  state.currentFile = null
+  state.currentResult = null
+  state.error = null
+  state.processingStage = null
 }
 
 export default state
