@@ -32,6 +32,25 @@
         @keydown="handleKeydown"
       />
 
+      <!-- Success Indicator -->
+      <div
+        v-if="success && !$slots.icon"
+        class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+      >
+        <svg 
+          class="w-5 h-5 text-green-500 animate-[fadeIn_0.3s_ease-out]" 
+          fill="currentColor" 
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </div>
+
       <!-- Icon Slot -->
       <div
         v-if="$slots.icon"
@@ -70,7 +89,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, useSlots } from 'vue'
+import { computed, ref, nextTick, useSlots, watch } from 'vue'
+import { useMotionPreference } from '@/composables/useMotionPreference'
+import { animationConfig } from '@/config/animations'
+import gsap from 'gsap'
 
 interface Props {
   modelValue?: string | number
@@ -79,6 +101,7 @@ interface Props {
   placeholder?: string
   helperText?: string
   error?: string
+  success?: boolean
   disabled?: boolean
   readonly?: boolean
   required?: boolean
@@ -89,7 +112,8 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'text',
   disabled: false,
   readonly: false,
-  required: false
+  required: false,
+  success: false
 })
 
 const emit = defineEmits<{
@@ -102,6 +126,7 @@ const emit = defineEmits<{
 const slots = useSlots()
 const inputRef = ref<HTMLInputElement>()
 const isFocused = ref(false)
+const { shouldAnimate, getDuration } = useMotionPreference()
 
 // Generate unique ID for accessibility
 const inputId = computed(() => props.id || `input-${Math.random().toString(36).substr(2, 9)}`)
@@ -126,6 +151,22 @@ const handleKeydown = (event: KeyboardEvent) => {
   emit('keydown', event)
 }
 
+// Shake animation for error state
+watch(() => props.error, (newError, oldError) => {
+  if (newError && !oldError && shouldAnimate.value && inputRef.value) {
+    gsap.fromTo(
+      inputRef.value,
+      { x: -10 },
+      {
+        x: 0,
+        duration: getDuration(animationConfig.duration.normal) / 1000,
+        ease: 'elastic.out(3, 0.3)',
+        clearProps: 'x'
+      }
+    )
+  }
+})
+
 const inputClasses = computed(() => {
   const baseClasses = [
     'block',
@@ -136,29 +177,35 @@ const inputClasses = computed(() => {
     'bg-white',
     'border',
     'rounded-xl',
-    // Task 9.2: Enhanced transitions for all interactive elements
     'transition-all',
-    'duration-150',
+    'duration-200',
     'ease-out',
     'placeholder-gray-400',
     'focus:outline-none',
-    'focus:ring-0'
+    'focus:ring-0',
+    'theme-transition'
   ]
 
-  // State-based classes with enhanced focus states (Task 9.2)
+  // State-based classes with enhanced focus animations
   if (props.error) {
     baseClasses.push(
       'border-red-300',
       'focus:border-red-500',
-      'focus:shadow-sm',
+      'focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]',
       'bg-red-50'
+    )
+  } else if (props.success) {
+    baseClasses.push(
+      'border-green-300',
+      'focus:border-green-500',
+      'focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]',
+      'bg-green-50'
     )
   } else if (isFocused.value) {
     baseClasses.push(
       'border-black',
       'bg-white',
-      // Task 9.2: Proper accessibility indicators
-      'shadow-sm'
+      'shadow-[0_0_0_3px_rgba(0,0,0,0.05)]'
     )
   } else {
     baseClasses.push(
@@ -205,3 +252,16 @@ defineExpose({
   inputRef
 })
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 page-enter">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 page-enter-stagger-1">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div data-animate-child class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
       <!-- Processing State -->
       <div v-if="isProcessing || isUploading" class="text-center">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">Processing Document</h2>
@@ -39,6 +39,15 @@
             ></div>
             <span class="text-xs text-gray-500">{{ stage.label }}</span>
           </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-4 overflow-hidden">
+          <div 
+            ref="progressBarRef"
+            class="h-full bg-black rounded-full transition-all duration-300 origin-left"
+            :style="{ transform: `scaleX(${progressPercentage / 100})` }"
+          ></div>
         </div>
 
         <!-- Status Message -->
@@ -95,12 +104,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLoadingAnimation } from '@/composables/useLoadingAnimation'
 import uploadState, { isProcessing, isUploading, hasError, isCompleted } from '@/state/uploadState'
 import type { ProcessingStage } from '@/state/uploadState'
 
 const router = useRouter()
+const progressBarRef = ref<HTMLElement | null>(null)
+const { animateProgress } = useLoadingAnimation({ type: 'progress' })
 
 // State
 const currentFile = computed(() => uploadState.currentFile)
@@ -152,6 +164,26 @@ function goToUpload() {
 function goToHome() {
   router.push('/')
 }
+
+// Compute progress based on stage
+const progressPercentage = computed(() => {
+  if (!processingStage.value) return 0
+  
+  const stageProgress: Record<ProcessingStage, number> = {
+    cleaning: 33,
+    extracting: 66,
+    translating: 100,
+  }
+  
+  return stageProgress[processingStage.value] || 0
+})
+
+// Watch for stage changes and animate progress
+watch(processingStage, (newStage) => {
+  if (newStage && progressBarRef.value) {
+    animateProgress(progressBarRef.value, progressPercentage.value)
+  }
+})
 
 // Auto-navigate to results when processing is complete
 watch(isCompleted, (completed) => {

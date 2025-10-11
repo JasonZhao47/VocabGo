@@ -31,6 +31,11 @@ const router = createRouter({
       path: '/wordlists', 
       name: 'wordlists', 
       component: () => import('@/pages/SavedWordlistsPage.vue')
+    },
+    { 
+      path: '/toast-demo', 
+      name: 'toast-demo', 
+      component: () => import('@/pages/ToastDemo.vue')
     }
   ]
 })

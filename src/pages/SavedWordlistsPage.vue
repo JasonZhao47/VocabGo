@@ -1,7 +1,7 @@
 <template>
   <div class="wordlists-page">
     <!-- Header with ElevenLabs styling - Responsive (Task 8.3) -->
-    <div class="wordlists-header">
+    <div data-animate-child class="wordlists-header">
       <h1 class="wordlists-title">Saved Wordlists</h1>
       
       <!-- Optional search bar with minimal styling -->
@@ -25,7 +25,11 @@
 
     <!-- Loading State with Skeletons (Task 11.2) -->
     <div v-if="isLoading" class="wordlists-grid">
-      <WordlistCardSkeleton v-for="i in 6" :key="i" />
+      <WordlistCardSkeleton 
+        v-for="i in 6" 
+        :key="i" 
+        :fade-out="!isLoading"
+      />
     </div>
 
     <!-- Error State -->
@@ -66,11 +70,12 @@
     </div>
 
     <!-- Wordlists Grid with ElevenLabs styling - Responsive (Task 8.3) -->
-    <div v-else class="wordlists-grid page-enter-stagger-2">
+    <div v-else class="wordlists-grid">
       <div 
         v-for="wordlist in filteredWordlists" 
         :key="wordlist.id"
-        class="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-250 ease-out"
+        data-animate-child
+        class="wordlist-card bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-250 ease-out"
       >
         <!-- Card Content -->
         <div class="p-6">
@@ -148,36 +153,42 @@
         </div>
 
         <!-- Expanded Wordlist View -->
-        <div 
-          v-if="expandedWordlistId === wordlist.id"
-          class="border-t border-gray-100 bg-gray-50 p-6"
+        <Transition
+          name="expand"
+          @enter="onExpandEnter"
+          @leave="onExpandLeave"
         >
-          <h4 class="text-[13px] font-semibold text-gray-700 uppercase tracking-wide mb-4">Word Pairs</h4>
-          <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <table class="min-w-full">
-              <thead>
-                <tr class="border-b border-gray-100">
-                  <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    English
-                  </th>
-                  <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Mandarin
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(pair, index) in wordlist.words" :key="index" class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-5 py-4 text-[15px] font-medium text-black">
-                    {{ pair.en }}
-                  </td>
-                  <td class="px-5 py-4 text-[15px] text-gray-800">
-                    {{ pair.zh }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div 
+            v-if="expandedWordlistId === wordlist.id"
+            class="wordlist-expanded border-t border-gray-100 bg-gray-50 p-6"
+          >
+            <h4 class="text-[13px] font-semibold text-gray-700 uppercase tracking-wide mb-4">Word Pairs</h4>
+            <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="border-b border-gray-100">
+                    <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                      English
+                    </th>
+                    <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                      Mandarin
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(pair, index) in wordlist.words" :key="index" class="wordlist-table-row border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-all duration-150 ease-out">
+                    <td class="px-5 py-4 text-[15px] font-medium text-black">
+                      {{ pair.en }}
+                    </td>
+                    <td class="px-5 py-4 text-[15px] text-gray-800">
+                      {{ pair.zh }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </Transition>
       </div>
     </div>
 
@@ -226,10 +237,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useWordlist } from '@/composables/useWordlist'
 import type { WordlistRecord } from '@/state/wordlistsState'
 import WordlistCardSkeleton from '@/components/ui/WordlistCardSkeleton.vue'
+import { staggerAnimation } from '@/utils/staggerAnimation'
+import { useMotionPreference } from '@/composables/useMotionPreference'
+import { animationConfig } from '@/config/animations'
+import gsap from 'gsap'
 
 // Use the wordlist composable
 const {
@@ -243,6 +258,9 @@ const {
   downloadWordlist,
 } = useWordlist()
 
+// Motion preference detection
+const { shouldAnimate, getDuration } = useMotionPreference()
+
 // Local state for UI interactions
 const searchQuery = ref('')
 const expandedWordlistId = ref<string | null>(null)
@@ -250,6 +268,7 @@ const showDeleteConfirm = ref(false)
 const deleteTarget = ref<{ id: string; filename: string } | null>(null)
 const exportingId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
+const hasAnimated = ref(false)
 
 // Filtered wordlists based on search query
 const filteredWordlists = computed(() => {
@@ -272,10 +291,182 @@ onMounted(async () => {
 })
 
 /**
+ * Animate wordlist cards with stagger effect
+ */
+async function animateCards() {
+  if (!shouldAnimate.value || hasAnimated.value) return
+
+  await nextTick()
+  
+  const cards = document.querySelectorAll('.wordlist-card')
+  if (cards.length === 0) return
+
+  // Set initial state
+  gsap.set(cards, {
+    opacity: 0,
+    y: 20,
+  })
+
+  // Animate with stagger
+  staggerAnimation(
+    Array.from(cards),
+    {
+      opacity: 1,
+      y: 0,
+      duration: getDuration(animationConfig.duration.normal) / 1000,
+      ease: animationConfig.easing.easeOut,
+    },
+    {
+      delay: animationConfig.stagger.normal,
+      from: 'start',
+    }
+  )
+
+  hasAnimated.value = true
+}
+
+/**
+ * Animate new cards when list updates
+ */
+async function animateNewCards() {
+  if (!shouldAnimate.value) return
+
+  await nextTick()
+  
+  const cards = document.querySelectorAll('.wordlist-card')
+  if (cards.length === 0) return
+
+  // Only animate cards that haven't been animated yet
+  const newCards = Array.from(cards).filter(card => {
+    return gsap.getProperty(card, 'opacity') === 0
+  })
+
+  if (newCards.length === 0) return
+
+  // Animate new cards
+  gsap.to(newCards, {
+    opacity: 1,
+    y: 0,
+    duration: getDuration(animationConfig.duration.normal) / 1000,
+    ease: animationConfig.easing.easeOut,
+    stagger: animationConfig.stagger.fast / 1000,
+  })
+}
+
+// Watch for wordlists to load and trigger animation
+watch(
+  () => filteredWordlists.value.length,
+  async (newLength, oldLength) => {
+    if (newLength > 0 && !isLoading.value) {
+      if (!hasAnimated.value) {
+        // First load - animate all cards
+        await animateCards()
+      } else if (newLength !== oldLength) {
+        // List updated - animate new cards
+        await animateNewCards()
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// Reset animation flag when search changes
+watch(searchQuery, () => {
+  hasAnimated.value = false
+})
+
+/**
  * Toggle expanded view for a wordlist
  */
-function toggleExpanded(id: string) {
-  expandedWordlistId.value = expandedWordlistId.value === id ? null : id
+async function toggleExpanded(id: string) {
+  const wasExpanded = expandedWordlistId.value === id
+  expandedWordlistId.value = wasExpanded ? null : id
+  
+  // Animate table rows when expanding
+  if (!wasExpanded && shouldAnimate.value) {
+    await nextTick()
+    animateTableRows()
+  }
+}
+
+/**
+ * Animate table rows with stagger effect
+ */
+function animateTableRows() {
+  if (!shouldAnimate.value) return
+
+  const rows = document.querySelectorAll('.wordlist-table-row')
+  if (rows.length === 0) return
+
+  // Set initial state
+  gsap.set(rows, {
+    opacity: 0,
+    x: -10,
+  })
+
+  // Animate with stagger
+  gsap.to(rows, {
+    opacity: 1,
+    x: 0,
+    duration: getDuration(animationConfig.duration.fast) / 1000,
+    ease: animationConfig.easing.easeOut,
+    stagger: animationConfig.stagger.fast / 1000,
+  })
+}
+
+/**
+ * Handle expand transition enter
+ */
+function onExpandEnter(el: Element, done: () => void) {
+  if (!shouldAnimate.value) {
+    done()
+    return
+  }
+
+  const element = el as HTMLElement
+  
+  // Get the natural height
+  element.style.height = 'auto'
+  const height = element.offsetHeight
+  
+  // Set initial state
+  gsap.set(element, {
+    height: 0,
+    opacity: 0,
+  })
+
+  // Animate to natural height
+  gsap.to(element, {
+    height,
+    opacity: 1,
+    duration: getDuration(animationConfig.duration.normal) / 1000,
+    ease: animationConfig.easing.easeOut,
+    onComplete: () => {
+      element.style.height = 'auto'
+      done()
+    },
+  })
+}
+
+/**
+ * Handle expand transition leave
+ */
+function onExpandLeave(el: Element, done: () => void) {
+  if (!shouldAnimate.value) {
+    done()
+    return
+  }
+
+  const element = el as HTMLElement
+  
+  // Animate to zero height
+  gsap.to(element, {
+    height: 0,
+    opacity: 0,
+    duration: getDuration(animationConfig.duration.fast) / 1000,
+    ease: animationConfig.easing.easeIn,
+    onComplete: done,
+  })
 }
 
 /**
@@ -512,6 +703,20 @@ async function handleExport(wordlist: WordlistRecord) {
   .wordlists-grid :deep(h3) {
     font-size: 17px;
   }
+}
+
+/* Expand transition styles (Task 9.2) */
+.wordlist-expanded {
+  overflow: hidden;
+}
+
+/* Table row animations (Task 9.2) */
+.wordlist-table-row {
+  cursor: default;
+}
+
+.wordlist-table-row:hover {
+  transform: translateX(2px);
 }
 </style>
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+t#!/bin/bash
 # Start development environment with proper environment variables
 
 echo "Starting Supabase with environment variables..."

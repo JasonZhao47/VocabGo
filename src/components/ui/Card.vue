@@ -1,6 +1,7 @@
 <template>
   <component
     :is="tag"
+    ref="cardRef"
     :class="cardClasses"
     @click="handleClick"
   >
@@ -22,14 +23,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import gsap from 'gsap'
+import { useInteractiveAnimation } from '@/composables/useInteractiveAnimation'
+import { animationConfig } from '@/config/animations'
+import { useMotionPreference } from '@/composables/useMotionPreference'
 
 interface Props {
-  variant?: 'default' | 'outlined' | 'elevated'
+  variant?: 'default' | 'outlined' | 'elevated' | 'gradient-border'
   interactive?: boolean
   padding?: 'none' | 'small' | 'medium' | 'large'
   tag?: 'div' | 'article' | 'section'
   hover?: boolean
+  animateOnMount?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,15 +43,57 @@ const props = withDefaults(defineProps<Props>(), {
   interactive: false,
   padding: 'medium',
   tag: 'div',
-  hover: true
+  hover: true,
+  animateOnMount: true
 })
 
 const emit = defineEmits<{
   click: [event: Event]
 }>()
 
+const cardRef = ref<HTMLElement | null>(null)
+const { shouldAnimate, getDuration } = useMotionPreference()
+
+// Apply interactive animations when interactive and hover are enabled
+if (props.interactive && props.hover) {
+  useInteractiveAnimation(cardRef, {
+    hoverScale: 1.02,
+    activeScale: animationConfig.scale.active,
+    duration: animationConfig.duration.normal,
+  })
+}
+
+// Enter animation on mount
+onMounted(() => {
+  if (!props.animateOnMount || !shouldAnimate.value || !cardRef.value) return
+
+  gsap.fromTo(
+    cardRef.value,
+    {
+      opacity: 0,
+      y: animationConfig.slide.medium,
+    },
+    {
+      opacity: 1,
+      y: 0,
+      duration: getDuration(animationConfig.duration.slow) / 1000,
+      ease: animationConfig.easing.easeOut,
+    }
+  )
+})
+
 const handleClick = (event: Event) => {
   if (props.interactive) {
+    // Add click feedback animation
+    if (shouldAnimate.value && cardRef.value) {
+      gsap.to(cardRef.value, {
+        scale: animationConfig.scale.active,
+        duration: getDuration(100) / 1000,
+        ease: animationConfig.easing.easeOut,
+        yoyo: true,
+        repeat: 1,
+      })
+    }
     emit('click', event)
   }
 }
@@ -54,9 +102,10 @@ const cardClasses = computed(() => {
   const baseClasses = [
     'bg-white',
     'rounded-2xl',
-    'transition-all',
+    'transition-shadow',
     'duration-250',
-    'ease-out'
+    'ease-out',
+    'theme-transition'
   ]
 
   // Variant classes
@@ -74,6 +123,10 @@ const cardClasses = computed(() => {
     elevated: [
       'shadow-md',
       'border-none'
+    ],
+    'gradient-border': [
+      'gradient-border',
+      'shadow-sm'
     ]
   }
 
@@ -91,12 +144,9 @@ const cardClasses = computed(() => {
     'select-none'
   ] : []
 
-  // Hover classes
+  // Hover classes - elevation effect with box-shadow
   const hoverClasses = (props.interactive && props.hover) ? [
-    'hover:shadow-lg',
-    'hover:-translate-y-0.5',
-    'active:translate-y-0',
-    'active:shadow-md'
+    'hover:shadow-xl',
   ] : []
 
   return [

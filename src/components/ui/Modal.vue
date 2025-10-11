@@ -16,6 +16,7 @@
       >
         <!-- Backdrop -->
         <div
+          ref="backdropRef"
           class="absolute inset-0 bg-black/50 backdrop-blur-sm"
           aria-hidden="true"
         />
@@ -31,7 +32,7 @@
           @click.stop
         >
           <!-- Header -->
-          <div v-if="$slots.header || title || closable" class="modal-header">
+          <div v-if="$slots.header || title || closable" class="modal-header" data-animate-child>
             <div class="flex items-center justify-between">
               <div class="flex-1">
                 <h2
@@ -59,7 +60,7 @@
           </div>
 
           <!-- Content -->
-          <div class="modal-content">
+          <div class="modal-content" data-animate-child>
             <div v-if="description" :id="descriptionId" class="text-gray-600 mb-4">
               {{ description }}
             </div>
@@ -67,7 +68,7 @@
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="modal-footer">
+          <div v-if="$slots.footer" class="modal-footer" data-animate-child>
             <slot name="footer" />
           </div>
         </div>
@@ -78,6 +79,10 @@
 
 <script setup lang="ts">
 import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import gsap from 'gsap'
+import { useModalAnimation } from '@/composables/useModalAnimation'
+import { animationConfig } from '@/config/animations'
+import { useMotionPreference } from '@/composables/useMotionPreference'
 
 interface Props {
   modelValue: boolean
@@ -110,7 +115,12 @@ const emit = defineEmits<{
 
 const modalRef = ref<HTMLElement>()
 const modalContentRef = ref<HTMLElement>()
+const backdropRef = ref<HTMLElement>()
 const previousActiveElement = ref<HTMLElement>()
+
+// Initialize modal animation composable
+const modalAnimation = useModalAnimation({ duration: 300, backdropBlur: true })
+const { shouldAnimate, getDuration } = useMotionPreference()
 
 // Generate unique IDs for accessibility
 const titleId = computed(() => `modal-title-${Math.random().toString(36).substr(2, 9)}`)
@@ -125,7 +135,8 @@ const modalClasses = computed(() => {
     'max-h-[90vh]',
     'overflow-hidden',
     'flex',
-    'flex-col'
+    'flex-col',
+    'theme-transition'
   ]
 
   const sizeClasses = {
@@ -143,8 +154,16 @@ const modalClasses = computed(() => {
 
 const close = () => {
   if (!props.persistent) {
-    emit('update:modelValue', false)
-    emit('close')
+    // Trigger close animation if elements are available
+    if (modalContentRef.value && backdropRef.value) {
+      modalAnimation.close(modalContentRef.value, backdropRef.value, () => {
+        emit('update:modelValue', false)
+        emit('close')
+      })
+    } else {
+      emit('update:modelValue', false)
+      emit('close')
+    }
   }
 }
 
@@ -195,17 +214,39 @@ const setInitialFocus = async () => {
   }
 }
 
+// Stagger animation for modal content
+const animateModalContent = () => {
+  if (!shouldAnimate.value || !modalContentRef.value) return
+  
+  const children = modalContentRef.value.querySelectorAll('[data-animate-child]')
+  if (children.length === 0) return
+  
+  gsap.from(children, {
+    opacity: 0,
+    y: 10,
+    duration: getDuration(animationConfig.duration.normal) / 1000,
+    stagger: animationConfig.stagger.fast / 1000,
+    ease: animationConfig.easing.easeOut,
+  })
+}
+
 // Transition handlers
 const onEnter = () => {
   emit('before-open')
   previousActiveElement.value = document.activeElement as HTMLElement
   document.body.style.overflow = 'hidden'
   document.addEventListener('keydown', trapFocus)
+  
+  // Trigger modal animation
+  if (modalContentRef.value && backdropRef.value) {
+    modalAnimation.open(modalContentRef.value, backdropRef.value)
+  }
 }
 
 const onAfterEnter = () => {
   emit('after-open')
   setInitialFocus()
+  animateModalContent()
 }
 
 const onLeave = () => {

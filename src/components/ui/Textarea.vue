@@ -29,6 +29,25 @@
         @keydown="handleKeydown"
       />
 
+      <!-- Success Indicator -->
+      <div
+        v-if="success && !maxLength"
+        class="absolute top-2 right-3 flex items-center pointer-events-none"
+      >
+        <svg 
+          class="w-5 h-5 text-green-500 animate-[fadeIn_0.3s_ease-out]" 
+          fill="currentColor" 
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </div>
+
       <!-- Character Count -->
       <div
         v-if="maxLength"
@@ -64,7 +83,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, watch, onMounted } from 'vue'
+import { useMotionPreference } from '@/composables/useMotionPreference'
+import { animationConfig } from '@/config/animations'
+import gsap from 'gsap'
 
 interface Props {
   modelValue?: string
@@ -72,11 +94,13 @@ interface Props {
   placeholder?: string
   helperText?: string
   error?: string
+  success?: boolean
   disabled?: boolean
   readonly?: boolean
   required?: boolean
   rows?: number
   maxLength?: number
+  autoResize?: boolean
   id?: string
 }
 
@@ -84,7 +108,9 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   readonly: false,
   required: false,
-  rows: 4
+  success: false,
+  rows: 4,
+  autoResize: false
 })
 
 const emit = defineEmits<{
@@ -96,6 +122,7 @@ const emit = defineEmits<{
 
 const textareaRef = ref<HTMLTextAreaElement>()
 const isFocused = ref(false)
+const { shouldAnimate, getDuration } = useMotionPreference()
 
 // Generate unique ID for accessibility
 const textareaId = computed(() => props.id || `textarea-${Math.random().toString(36).substr(2, 9)}`)
@@ -103,6 +130,24 @@ const textareaId = computed(() => props.id || `textarea-${Math.random().toString
 const characterCount = computed(() => {
   return props.modelValue?.length || 0
 })
+
+// Auto-resize functionality
+const adjustHeight = () => {
+  if (!props.autoResize || !textareaRef.value) return
+  
+  const textarea = textareaRef.value
+  const currentHeight = textarea.scrollHeight
+  
+  if (shouldAnimate.value) {
+    gsap.to(textarea, {
+      height: currentHeight,
+      duration: getDuration(animationConfig.duration.fast) / 1000,
+      ease: animationConfig.easing.easeOut
+    })
+  } else {
+    textarea.style.height = `${currentHeight}px`
+  }
+}
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
@@ -115,6 +160,11 @@ const handleInput = (event: Event) => {
   }
   
   emit('update:modelValue', value)
+  
+  // Adjust height after input
+  if (props.autoResize) {
+    nextTick(() => adjustHeight())
+  }
 }
 
 const handleBlur = (event: FocusEvent) => {
@@ -131,6 +181,29 @@ const handleKeydown = (event: KeyboardEvent) => {
   emit('keydown', event)
 }
 
+// Shake animation for error state
+watch(() => props.error, (newError, oldError) => {
+  if (newError && !oldError && shouldAnimate.value && textareaRef.value) {
+    gsap.fromTo(
+      textareaRef.value,
+      { x: -10 },
+      {
+        x: 0,
+        duration: getDuration(animationConfig.duration.normal) / 1000,
+        ease: 'elastic.out(3, 0.3)',
+        clearProps: 'x'
+      }
+    )
+  }
+})
+
+// Initialize auto-resize on mount
+onMounted(() => {
+  if (props.autoResize && props.modelValue) {
+    nextTick(() => adjustHeight())
+  }
+})
+
 const textareaClasses = computed(() => {
   const baseClasses = [
     'block',
@@ -141,30 +214,42 @@ const textareaClasses = computed(() => {
     'bg-white',
     'border',
     'rounded-xl',
-    // Task 9.2: Enhanced transitions for all interactive elements
     'transition-all',
-    'duration-150',
+    'duration-200',
     'ease-out',
     'placeholder-gray-400',
     'focus:outline-none',
     'focus:ring-0',
-    'resize-vertical'
+    'theme-transition'
   ]
 
-  // State-based classes with enhanced focus states (Task 9.2)
+  // Resize behavior
+  if (props.autoResize) {
+    baseClasses.push('resize-none', 'overflow-hidden')
+  } else {
+    baseClasses.push('resize-vertical')
+  }
+
+  // State-based classes with enhanced focus animations
   if (props.error) {
     baseClasses.push(
       'border-red-300',
       'focus:border-red-500',
-      'focus:shadow-sm',
+      'focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]',
       'bg-red-50'
+    )
+  } else if (props.success) {
+    baseClasses.push(
+      'border-green-300',
+      'focus:border-green-500',
+      'focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]',
+      'bg-green-50'
     )
   } else if (isFocused.value) {
     baseClasses.push(
       'border-black',
       'bg-white',
-      // Task 9.2: Proper accessibility indicators
-      'shadow-sm'
+      'shadow-[0_0_0_3px_rgba(0,0,0,0.05)]'
     )
   } else {
     baseClasses.push(
@@ -211,3 +296,16 @@ defineExpose({
   textareaRef
 })
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>

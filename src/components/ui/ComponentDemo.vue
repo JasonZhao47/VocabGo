@@ -8,13 +8,13 @@
       <div class="flex flex-wrap gap-4">
         <Button variant="primary">Primary Button</Button>
         <Button variant="secondary">Secondary Button</Button>
-        <Button variant="text">Text Button</Button>
         <Button variant="ghost">Ghost Button</Button>
+        <Button variant="destructive">Destructive Button</Button>
       </div>
       <div class="flex flex-wrap gap-4">
-        <Button variant="primary" size="small">Small</Button>
-        <Button variant="primary" size="medium">Medium</Button>
-        <Button variant="primary" size="large">Large</Button>
+        <Button variant="primary" size="sm">Small</Button>
+        <Button variant="primary" size="md">Medium</Button>
+        <Button variant="primary" size="lg">Large</Button>
       </div>
       <div class="flex flex-wrap gap-4">
         <Button variant="primary" :loading="true">Loading</Button>
@@ -91,7 +91,7 @@
         <p class="text-gray-600">Click me! I have hover effects and emit click events.</p>
         <template #footer>
           <div class="flex justify-end">
-            <Button variant="text" size="small">Action</Button>
+            <Button variant="ghost" size="sm">Action</Button>
           </div>
         </template>
       </Card>

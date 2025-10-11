@@ -1,0 +1,249 @@
+/**
+ * Gradient Utilities and Transitions
+ * ElevenLabs-inspired gradient patterns with smooth transitions
+ */
+
+/* ============================================
+   GRADIENT TRANSITION UTILITIES
+   ============================================ */
+
+/* Base gradient transition class */
+.gradient-transition {
+  transition: background-image 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-position 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-size 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gradient hover effect - shifts gradient position */
+.gradient-hover-shift {
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  transition: background-position 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-hover-shift:hover {
+  background-position: 100% 50%;
+}
+
+/* Gradient hover effect - intensifies colors */
+.gradient-hover-intensify {
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-hover-intensify::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.gradient-hover-intensify:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   GRADIENT BORDER UTILITIES
+   ============================================ */
+
+/* Gradient border using pseudo-element */
+.gradient-border {
+  position: relative;
+  background: white;
+  border-radius: 8px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-border:hover::before {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+}
+
+/* Animated gradient border */
+.gradient-border-animated {
+  position: relative;
+  background: white;
+  border-radius: 8px;
+}
+
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, #2563EB, #1E40AF, #2563EB, #1E40AF);
+  background-size: 300% 300%;
+  animation: gradient-rotate 3s ease infinite;
+  z-index: -1;
+}
+
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ============================================
+   GRADIENT TEXT UTILITIES
+   ============================================ */
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: background-position 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animated gradient text */
+.gradient-text-animated {
+  background: linear-gradient(90deg, #2563EB, #1E40AF, #2563EB);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-text-flow 3s ease infinite;
+}
+
+@keyframes gradient-text-flow {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+/* Gradient text with hover effect */
+.gradient-text-hover {
+  background: linear-gradient(135deg, #000000 0%, #1A1A1A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: background-image 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-text-hover:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+}
+
+/* ============================================
+   THEME TRANSITION UTILITIES
+   ============================================ */
+
+/* Smooth color transitions for theme changes */
+.theme-transition {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Theme transition for all color properties */
+.theme-transition-all {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-transition,
+  .gradient-hover-shift,
+  .gradient-hover-intensify::before,
+  .gradient-border::before,
+  .gradient-text,
+  .gradient-text-hover,
+  .theme-transition,
+  .theme-transition-all {
+    transition-duration: 0ms;
+  }
+  
+  .gradient-border-animated::before,
+  .gradient-text-animated {
+    animation: none;
+  }
+}
+
+/* ============================================
+   GRADIENT OVERLAY UTILITIES
+   ============================================ */
+
+/* Gradient overlay for images */
+.gradient-overlay {
+  position: relative;
+}
+
+.gradient-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.gradient-overlay:hover::after {
+  opacity: 0.8;
+}
+
+/* Gradient fade for text truncation */
+.gradient-fade-right {
+  position: relative;
+}
+
+.gradient-fade-right::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(90deg, transparent 0%, white 100%);
+  pointer-events: none;
+}
+
+/* ============================================
+   GRADIENT BACKGROUND UTILITIES
+   ============================================ */
+
+/* Mesh gradient background */
+.gradient-mesh {
+  background: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(30, 64, 175, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(30, 64, 175, 0.1) 0px, transparent 50%);
+}
+
+/* Spotlight gradient effect */
+.gradient-spotlight {
+  background: radial-gradient(
+    circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    rgba(37, 99, 235, 0.15) 0%,
+    transparent 50%
+  );
+  transition: --spotlight-x 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              --spotlight-y 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}

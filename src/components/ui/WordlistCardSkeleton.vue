@@ -1,5 +1,8 @@
 <template>
-  <div class="wordlist-card-skeleton">
+  <div 
+    class="wordlist-card-skeleton"
+    :class="{ 'skeleton-fade-out': fadeOut }"
+  >
     <!-- Card header -->
     <div class="card-header">
       <Skeleton variant="text" width="70%" height="20px" />
@@ -27,6 +30,14 @@
 
 <script setup lang="ts">
 import Skeleton from './Skeleton.vue'
+
+interface Props {
+  fadeOut?: boolean
+}
+
+withDefaults(defineProps<Props>(), {
+  fadeOut: false,
+})
 </script>
 
 <style scoped>
@@ -35,6 +46,19 @@ import Skeleton from './Skeleton.vue'
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+}
+
+.skeleton-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordlist-card-skeleton {
+    transition: none;
+  }
 }
 
 .card-header {

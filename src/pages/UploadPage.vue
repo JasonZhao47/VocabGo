@@ -6,21 +6,21 @@
     <!-- Main Content with Proper Padding -->
     <div style="max-width: 700px; margin: 0 auto; padding: 60px 24px 40px;">
       <!-- Page Header with Clean Typography -->
-      <div style="margin-bottom: 48px;">
+      <div data-animate-child style="margin-bottom: 48px;">
         <p style="font-size: 11px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">UPLOAD DOCUMENT</p>
         <h1 style="font-size: 36px; font-weight: 700; color: #000000; margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.01em;">Upload Document</h1>
         <p style="font-size: 18px; color: #6B7280; line-height: 1.6; max-width: 576px;">Extract vocabulary from your reading materials</p>
       </div>
 
       <!-- English Resources - Horizontal Scrollable Boxes (ElevenLabs 1:1 Replication) -->
-      <div style="margin-bottom: 32px; position: relative;">
+      <div data-animate-child style="margin-bottom: 32px; position: relative;">
         <!-- Left Scroll Arrow -->
         <button
           v-if="canScrollLeft"
           @click="scrollLeft"
           style="position: absolute; left: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
-          @mouseover="$event.currentTarget.style.backgroundColor = '#F9FAFB'"
-          @mouseout="$event.currentTarget.style.backgroundColor = '#FFFFFF'"
+          @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
+          @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = '#FFFFFF'"
         >
           <svg style="width: 16px; height: 16px; color: #000000;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -32,8 +32,8 @@
           v-if="canScrollRight"
           @click="scrollRight"
           style="position: absolute; right: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
-          @mouseover="$event.currentTarget.style.backgroundColor = '#F9FAFB'"
-          @mouseout="$event.currentTarget.style.backgroundColor = '#FFFFFF'"
+          @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
+          @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = '#FFFFFF'"
         >
           <svg style="width: 16px; height: 16px; color: #000000;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -100,6 +100,7 @@
 
       <!-- ElevenLabs-style Drop Zone -->
       <div
+        data-animate-child
         :style="{
           minHeight: '280px',
           borderRadius: '12px',
@@ -200,6 +201,7 @@
 
       <!-- Upload Button (Black Pill) -->
       <button
+        data-animate-child
         :style="{
           width: '100%',
           height: '56px',
@@ -220,8 +222,8 @@
         }"
         :disabled="!canUploadFile"
         @click="handleUpload"
-        @mouseover="$event.target.style.backgroundColor = canUploadFile ? '#1A1A1A' : '#D1D5DB'"
-        @mouseout="$event.target.style.backgroundColor = canUploadFile ? '#000000' : '#D1D5DB'"
+        @mouseover="($event.target as HTMLElement).style.backgroundColor = canUploadFile ? '#1A1A1A' : '#D1D5DB'"
+        @mouseout="($event.target as HTMLElement).style.backgroundColor = canUploadFile ? '#000000' : '#D1D5DB'"
       >
         <div v-if="isProcessing" style="display: flex; align-items: center; gap: 8px;">
           <div class="spinner"></div>
@@ -231,7 +233,7 @@
       </button>
 
       <!-- Format Information Section -->
-      <div style="margin-top: 64px; padding-top: 32px; border-top: 1px solid #F5F5F5;">
+      <div data-animate-child style="margin-top: 64px; padding-top: 32px; border-top: 1px solid #F5F5F5;">
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
           <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background-color: #F8F9FA; border: 1px solid #E5E7EB; border-radius: 8px; transition: border-color 150ms ease-out; cursor: default;">
             <span style="font-size: 12px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.05em;">PDF</span>
@@ -256,11 +258,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUpload } from '@/composables/useUpload'
+import { useLoadingAnimation } from '@/composables/useLoadingAnimation'
 import Header from '@/components/layout/Header.vue'
 
 const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
+const { isLoading: isButtonLoading, startLoading, stopLoading, animateSpinner } = useLoadingAnimation({
+  type: 'spinner',
+  duration: 800,
+})
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
@@ -270,6 +277,7 @@ const selectedResource = ref<string>('toefl')
 const scrollContainer = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
+const spinnerRef = ref<HTMLElement | null>(null)
 
 // English Resources - Boxes with icons and descriptions (ElevenLabs 1:1 Replication)
 const englishResources = [
@@ -350,8 +358,7 @@ function updateScrollButtons() {
   }
 }
 
-// Initialize scroll buttons on mount
-import { onMounted } from 'vue'
+// Initialize scroll buttons and spinner animation on mount
 onMounted(() => {
   updateScrollButtons()
   if (scrollContainer.value) {
@@ -420,11 +427,14 @@ async function handleUpload() {
   if (!selectedFile.value || !canUploadFile.value) return
 
   try {
+    startLoading()
     await uploadFile(selectedFile.value)
     // Navigation to results page is handled by the composable
   } catch (err) {
     // Error is handled by the composable and stored in state
     console.error('Upload failed:', err)
+  } finally {
+    stopLoading()
   }
 }
 

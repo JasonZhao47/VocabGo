@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import gradient utilities */
+@import './gradients.css';
+
 /* ============================================
    S-TIER SAAS DASHBOARD - ELEVENLABS INSPIRED
    Following best practices from Stripe, Airbnb, Linear
@@ -105,6 +108,31 @@
   
   .skip-link:focus {
     @apply top-0;
+  }
+  
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  
+  /* Screen reader only but focusable */
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
   
   /* ============================================
@@ -363,6 +391,37 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+  
+  /* ============================================
+     GPU ACCELERATION UTILITIES
+     ============================================ */
+  
+  /* Force GPU acceleration for animated elements */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Apply will-change for transform animations */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  /* Apply will-change for opacity animations */
+  .will-change-opacity {
+    will-change: opacity;
+  }
+  
+  /* Apply will-change for combined animations */
+  .will-change-transform-opacity {
+    will-change: transform, opacity;
+  }
+  
+  /* Remove will-change (use after animation completes) */
+  .will-change-auto {
+    will-change: auto;
   }
   
   /* ============================================

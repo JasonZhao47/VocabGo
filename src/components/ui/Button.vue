@@ -1,6 +1,7 @@
 <template>
   <component
     :is="tag"
+    ref="buttonRef"
     :type="tag === 'button' ? type : undefined"
     :disabled="disabled || loading"
     :class="buttonClasses"
@@ -45,7 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useInteractiveAnimation } from '@/composables/useInteractiveAnimation'
+import { animationConfig } from '@/config/animations'
+import gsap from 'gsap'
+import { useMotionPreference } from '@/composables/useMotionPreference'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -65,6 +70,43 @@ const props = withDefaults(defineProps<Props>(), {
   fullWidth: false,
   tag: 'button',
   type: 'button',
+})
+
+const buttonRef = ref<HTMLElement | null>(null)
+const { getDuration } = useMotionPreference()
+
+// Apply interactive animations only when not disabled or loading
+const shouldApplyAnimation = computed(() => !props.disabled && !props.loading)
+
+// Initialize interactive animation
+const { isHovered, isActive } = useInteractiveAnimation(buttonRef, {
+  hoverScale: animationConfig.scale.hover,
+  activeScale: animationConfig.scale.active,
+  duration: animationConfig.duration.fast,
+})
+
+// Handle disabled state opacity transition
+watch(() => props.disabled, (isDisabled) => {
+  if (!buttonRef.value) return
+  
+  gsap.to(buttonRef.value, {
+    opacity: isDisabled ? 0.5 : 1,
+    duration: getDuration(animationConfig.duration.normal) / 1000,
+    ease: animationConfig.easing.easeOut,
+  })
+})
+
+// Handle loading state - reset scale when loading starts
+watch(() => props.loading, (isLoading) => {
+  if (!buttonRef.value) return
+  
+  if (isLoading) {
+    gsap.to(buttonRef.value, {
+      scale: 1,
+      duration: getDuration(animationConfig.duration.fast) / 1000,
+      ease: animationConfig.easing.easeOut,
+    })
+  }
 })
 
 const buttonClasses = computed(() => {
@@ -98,6 +140,12 @@ const buttonClasses = computed(() => {
   if (props.fullWidth) {
     classes.push('w-full')
   }
+  
+  // Add transition class for smooth state changes
+  classes.push('transition-opacity')
+  
+  // Add theme transition class for color changes
+  classes.push('theme-transition')
   
   return classes.join(' ')
 })

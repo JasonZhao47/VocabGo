@@ -1,7 +1,7 @@
 <template>
   <div class="result-page">
     <!-- Header Section (Subtask 6.1) - Responsive (Task 8.3) -->
-    <div class="result-header">
+    <div data-animate-child class="result-header">
       <!-- Small uppercase label -->
       <div class="result-label">
         WORDLIST RESULT
@@ -26,7 +26,7 @@
     </div>
 
     <!-- Wordlist Table (Subtasks 6.2 & 6.3) - Responsive with horizontal scroll (Task 8.3) -->
-    <div v-else-if="wordPairs && wordPairs.length > 0" class="table-container page-enter-stagger-2">
+    <div v-else-if="wordPairs && wordPairs.length > 0" data-animate-child class="table-container">
       <!-- Wrapper for horizontal scroll with shadow indicators (Task 8.3) -->
       <div class="table-scroll-wrapper">
         <div class="table-wrapper">
@@ -77,7 +77,7 @@
     </div>
 
     <!-- Action Buttons (Subtask 6.4) - Responsive stacked layout (Task 8.3) -->
-    <div class="action-buttons page-enter-stagger-3">
+    <div data-animate-child class="action-buttons">
       <!-- Black pill "Save" button with icon -->
       <button 
         @click="saveList"

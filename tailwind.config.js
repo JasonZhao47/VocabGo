@@ -169,19 +169,124 @@ export default {
       },
       
       // ============================================
-      // TRANSITIONS
+      // TRANSITIONS & ANIMATIONS
       // ============================================
       transitionDuration: {
+        'instant': '0ms',
         'fast': '150ms',
         'DEFAULT': '200ms',
         'normal': '250ms',
-        'slow': '300ms',
+        'slow': '400ms',
+        'slower': '600ms',
       },
       
       transitionTimingFunction: {
         'ease-out': 'cubic-bezier(0, 0, 0.2, 1)',
         'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
         'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      },
+      
+      // Keyframe Animations
+      keyframes: {
+        // Shimmer effect for skeleton loading
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        // Fade in with slide up
+        'fade-in-up': {
+          '0%': { 
+            opacity: '0', 
+            transform: 'translateY(20px)' 
+          },
+          '100%': { 
+            opacity: '1', 
+            transform: 'translateY(0)' 
+          },
+        },
+        // Fade in with slide down
+        'fade-in-down': {
+          '0%': { 
+            opacity: '0', 
+            transform: 'translateY(-20px)' 
+          },
+          '100%': { 
+            opacity: '1', 
+            transform: 'translateY(0)' 
+          },
+        },
+        // Scale in animation
+        'scale-in': {
+          '0%': { 
+            opacity: '0', 
+            transform: 'scale(0.95)' 
+          },
+          '100%': { 
+            opacity: '1', 
+            transform: 'scale(1)' 
+          },
+        },
+        // Slide in from right
+        'slide-in-right': {
+          '0%': { 
+            transform: 'translateX(100%)' 
+          },
+          '100%': { 
+            transform: 'translateX(0)' 
+          },
+        },
+        // Slide in from left
+        'slide-in-left': {
+          '0%': { 
+            transform: 'translateX(-100%)' 
+          },
+          '100%': { 
+            transform: 'translateX(0)' 
+          },
+        },
+        // Shake animation for errors
+        'shake': {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-4px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' },
+        },
+        // Spin animation for loaders
+        'spin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        // Pulse animation
+        'pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+        // Bounce animation
+        'bounce': {
+          '0%, 100%': { 
+            transform: 'translateY(0)',
+            animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+          },
+          '50%': { 
+            transform: 'translateY(-25%)',
+            animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+          },
+        },
+      },
+      
+      // Animation utilities
+      animation: {
+        'shimmer': 'shimmer 1.5s infinite',
+        'fade-in-up': 'fade-in-up 0.3s ease-out',
+        'fade-in-down': 'fade-in-down 0.3s ease-out',
+        'scale-in': 'scale-in 0.3s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'slide-in-left': 'slide-in-left 0.3s ease-out',
+        'shake': 'shake 0.3s ease-in-out',
+        'spin': 'spin 1s linear infinite',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce': 'bounce 1s infinite',
       },
       
       // ============================================
@@ -213,6 +318,50 @@ export default {
         'modal': '1050',
         'popover': '1060',
         'tooltip': '1070',
+      },
+      
+      // ============================================
+      // GRADIENT PATTERNS
+      // ============================================
+      backgroundImage: {
+        // Subtle gradients for backgrounds
+        'gradient-subtle': 'linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%)',
+        'gradient-subtle-dark': 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+        
+        // Primary brand gradients
+        'gradient-primary': 'linear-gradient(135deg, #000000 0%, #1A1A1A 100%)',
+        'gradient-primary-hover': 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
+        
+        // Accent gradients (for CTAs and highlights)
+        'gradient-accent': 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
+        'gradient-accent-hover': 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+        
+        // Success gradient
+        'gradient-success': 'linear-gradient(135deg, #059669 0%, #065F46 100%)',
+        'gradient-success-hover': 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        
+        // Warm gradient (for hero sections)
+        'gradient-warm': 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%)',
+        
+        // Cool gradient (for hero sections)
+        'gradient-cool': 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 50%, #93C5FD 100%)',
+        
+        // Radial gradients for spotlight effects
+        'gradient-radial': 'radial-gradient(circle at center, var(--tw-gradient-stops))',
+        'gradient-radial-top': 'radial-gradient(circle at top, var(--tw-gradient-stops))',
+        'gradient-radial-bottom': 'radial-gradient(circle at bottom, var(--tw-gradient-stops))',
+        
+        // Shimmer gradient for loading states
+        'gradient-shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+        'gradient-shimmer-dark': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
+      },
+      
+      // Gradient color stops for custom gradients
+      gradientColorStops: {
+        'primary-start': '#000000',
+        'primary-end': '#1A1A1A',
+        'accent-start': '#2563EB',
+        'accent-end': '#1E40AF',
       },
     },
   },

@@ -1,5 +1,8 @@
 <template>
-  <div class="wordlist-table-skeleton">
+  <div 
+    class="wordlist-table-skeleton"
+    :class="{ 'skeleton-fade-out': fadeOut }"
+  >
     <!-- Table header skeleton -->
     <div class="table-header">
       <Skeleton variant="text" width="80px" height="12px" />
@@ -28,10 +31,12 @@ import Skeleton from './Skeleton.vue'
 
 interface Props {
   rows?: number
+  fadeOut?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   rows: 5,
+  fadeOut: false,
 })
 </script>
 
@@ -41,6 +46,19 @@ withDefaults(defineProps<Props>(), {
   border-radius: 12px;
   border: 1px solid #F3F4F6;
   overflow: hidden;
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+}
+
+.skeleton-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordlist-table-skeleton {
+    transition: none;
+  }
 }
 
 .table-header {
