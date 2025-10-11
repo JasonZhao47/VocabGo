@@ -8,9 +8,15 @@ import { useToast } from './useToast'
 describe('useToast with animations', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    // Clear all toasts before each test
+    const { clearAll } = useToast()
+    clearAll()
   })
 
   afterEach(() => {
+    // Clear all toasts after each test
+    const { clearAll } = useToast()
+    clearAll()
     vi.restoreAllMocks()
     vi.useRealTimers()
   })

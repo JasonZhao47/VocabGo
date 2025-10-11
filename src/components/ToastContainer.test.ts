@@ -39,14 +39,18 @@ describe('ToastContainer', () => {
   
   beforeEach(() => {
     vi.useFakeTimers()
+    // Clear all toasts before mounting to ensure clean state
+    const { clearAll } = useToast()
+    clearAll()
     wrapper = mount(ToastContainer)
   })
   
   afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
+    // Clear all toasts after each test
     const { clearAll } = useToast()
     clearAll()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
   })
   
   describe('Toast Type Rendering', () => {

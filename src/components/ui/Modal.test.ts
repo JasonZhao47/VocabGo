@@ -3,42 +3,46 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import Modal from './Modal.vue';
 
-// Create mock functions that we can track
-const mockOpen = vi.fn();
-const mockClose = vi.fn((modalEl: Element, backdropEl: Element, onComplete: () => void) => {
-  onComplete();
+// Mock GSAP before imports
+vi.mock('gsap', () => {
+  const mockGsapSet = vi.fn();
+  const mockGsapTo = vi.fn();
+  const mockGsapFrom = vi.fn();
+  const mockGsapFromTo = vi.fn();
+  const mockTimelineFromTo = vi.fn().mockReturnThis();
+  const mockTimelineTo = vi.fn().mockReturnThis();
+  const mockTimelineKill = vi.fn();
+  
+  return {
+    default: {
+      set: mockGsapSet,
+      to: mockGsapTo,
+      from: mockGsapFrom,
+      fromTo: mockGsapFromTo,
+      timeline: vi.fn(() => ({
+        fromTo: mockTimelineFromTo,
+        to: mockTimelineTo,
+        kill: mockTimelineKill,
+      })),
+    },
+  };
 });
-const mockGsapFrom = vi.fn();
-const mockGsapSet = vi.fn();
-const mockGsapTo = vi.fn();
-const mockGsapFromTo = vi.fn();
-const mockTimelineFromTo = vi.fn().mockReturnThis();
-const mockTimelineTo = vi.fn().mockReturnThis();
-const mockTimelineKill = vi.fn();
-
-// Mock GSAP
-vi.mock('gsap', () => ({
-  default: {
-    set: mockGsapSet,
-    to: mockGsapTo,
-    from: mockGsapFrom,
-    fromTo: mockGsapFromTo,
-    timeline: vi.fn(() => ({
-      fromTo: mockTimelineFromTo,
-      to: mockTimelineTo,
-      kill: mockTimelineKill,
-    })),
-  },
-}));
 
 // Mock composables
-vi.mock('@/composables/useModalAnimation', () => ({
-  useModalAnimation: vi.fn(() => ({
-    isOpen: { value: false },
-    open: mockOpen,
-    close: mockClose,
-  })),
-}));
+vi.mock('@/composables/useModalAnimation', () => {
+  const mockOpen = vi.fn();
+  const mockClose = vi.fn((modalEl: Element, backdropEl: Element, onComplete: () => void) => {
+    onComplete();
+  });
+  
+  return {
+    useModalAnimation: vi.fn(() => ({
+      isOpen: { value: false },
+      open: mockOpen,
+      close: mockClose,
+    })),
+  };
+});
 
 vi.mock('@/composables/useMotionPreference', () => ({
   useMotionPreference: vi.fn(() => ({
