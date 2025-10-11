@@ -13,6 +13,8 @@ import {
 // Using pdf-parse via npm: for Deno edge functions
 // @deno-types="npm:@types/pdf-parse"
 import pdfParse from 'npm:pdf-parse@1.1.1'
+// Import Buffer from Node.js compatibility layer
+import { Buffer } from 'node:buffer'
 
 /**
  * Parse PDF document and extract text

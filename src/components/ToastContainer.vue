@@ -1,10 +1,12 @@
 <template>
-  <div class="toast-container">
+  <div class="toast-container" aria-live="polite" aria-atomic="true">
     <TransitionGroup name="toast">
       <div
         v-for="toast in toasts"
         :key="toast.id"
         :class="['toast', `toast-${toast.type}`]"
+        :role="toast.type === 'error' ? 'alert' : 'status'"
+        :aria-label="`${toast.type} notification: ${toast.message}`"
         @click="removeToast(toast.id)"
       >
         <div class="toast-icon">

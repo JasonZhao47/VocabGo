@@ -1,18 +1,37 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Lazy load all route components for code-splitting
+// HomePage is loaded eagerly as it's the landing page
 import HomePage from '@/pages/HomePage.vue'
-import UploadPage from '@/pages/UploadPage.vue'
-import ProcessingPage from '@/pages/ProcessingPage.vue'
-import ResultPage from '@/pages/ResultPage.vue'
-import SavedWordlistsPage from '@/pages/SavedWordlistsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomePage },
-    { path: '/upload', name: 'upload', component: UploadPage },
-    { path: '/processing', name: 'processing', component: ProcessingPage },
-    { path: '/result', name: 'result', component: ResultPage },
-    { path: '/wordlists', name: 'wordlists', component: SavedWordlistsPage }
+    { 
+      path: '/', 
+      name: 'home', 
+      component: HomePage 
+    },
+    { 
+      path: '/upload', 
+      name: 'upload', 
+      component: () => import('@/pages/UploadPage.vue')
+    },
+    { 
+      path: '/processing', 
+      name: 'processing', 
+      component: () => import('@/pages/ProcessingPage.vue')
+    },
+    { 
+      path: '/result', 
+      name: 'result', 
+      component: () => import('@/pages/ResultPage.vue')
+    },
+    { 
+      path: '/wordlists', 
+      name: 'wordlists', 
+      component: () => import('@/pages/SavedWordlistsPage.vue')
+    }
   ]
 })
 

@@ -38,3 +38,14 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+
+[functions]
+# Environment variables for Edge Functions
+[functions.process-document]
+verify_jwt = false
+[functions.save-wordlist]
+verify_jwt = false
+[functions.delete-wordlist]
+verify_jwt = false
+[functions.fetch-wordlists]
+verify_jwt = false

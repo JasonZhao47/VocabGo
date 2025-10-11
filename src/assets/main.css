@@ -2,3 +2,390 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   S-TIER SAAS DASHBOARD - ELEVENLABS INSPIRED
+   Following best practices from Stripe, Airbnb, Linear
+   ============================================ */
+
+@layer base {
+  /* ============================================
+     BASE RESET & FOUNDATION
+     ============================================ */
+  
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-text-primary;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  /* ============================================
+     TYPOGRAPHY DEFAULTS
+     ============================================ */
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-text-primary;
+    margin: 0;
+  }
+  
+  p {
+    margin: 0;
+  }
+  
+  a {
+    @apply text-text-primary;
+    text-decoration: none;
+    transition: color 150ms ease-out;
+  }
+  
+  a:hover {
+    @apply text-text-secondary;
+  }
+  
+  /* ============================================
+     FORM ELEMENTS RESET
+     ============================================ */
+  
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  input,
+  select,
+  textarea {
+    @apply border-border bg-background;
+  }
+  
+  /* ============================================
+     ACCESSIBILITY - FOCUS STATES (WCAG AA+)
+     ============================================ */
+  
+  *:focus {
+    outline: none;
+  }
+  
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+  
+  /* Skip link for keyboard navigation */
+  .skip-link {
+    @apply absolute -top-10 left-0 z-50;
+    @apply bg-primary text-text-inverse;
+    @apply px-4 py-2 font-semibold;
+    @apply rounded-br-md;
+    transition: top 150ms ease-out;
+  }
+  
+  .skip-link:focus {
+    @apply top-0;
+  }
+  
+  /* ============================================
+     REDUCED MOTION SUPPORT
+     ============================================ */
+  
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ============================================
+     BUTTON COMPONENTS
+     ============================================ */
+  
+  .btn {
+    @apply inline-flex items-center justify-center;
+    @apply font-semibold;
+    @apply rounded-full;
+    @apply transition-all duration-fast;
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Primary Button (Black) */
+  .btn-primary {
+    @apply btn;
+    @apply bg-primary text-text-inverse;
+    @apply hover:bg-primary-hover;
+    @apply focus-visible:outline-primary;
+    @apply px-6 py-3;
+    height: 48px;
+  }
+  
+  .btn-primary-lg {
+    @apply btn-primary;
+    @apply px-8 py-4;
+    height: 56px;
+    font-size: 16px;
+  }
+  
+  /* Secondary Button (Outlined) */
+  .btn-secondary {
+    @apply btn;
+    @apply bg-background text-text-primary;
+    @apply border border-border-medium;
+    @apply hover:bg-background-secondary hover:border-border-dark;
+    @apply focus-visible:outline-primary;
+    @apply px-6 py-3;
+    height: 48px;
+  }
+  
+  /* Ghost Button (Text only) */
+  .btn-ghost {
+    @apply btn;
+    @apply bg-transparent text-text-secondary;
+    @apply hover:text-text-primary hover:bg-background-secondary;
+    @apply focus-visible:outline-primary;
+    @apply px-4 py-2;
+    height: 40px;
+  }
+  
+  /* Destructive Button */
+  .btn-destructive {
+    @apply btn;
+    @apply bg-error text-text-inverse;
+    @apply hover:bg-error-dark;
+    @apply focus-visible:outline-error;
+    @apply px-6 py-3;
+    height: 48px;
+  }
+  
+  /* ============================================
+     INPUT COMPONENTS
+     ============================================ */
+  
+  .input {
+    @apply w-full;
+    @apply px-4 py-3;
+    @apply bg-background-secondary;
+    @apply border border-border;
+    @apply rounded-md;
+    @apply text-body text-text-primary;
+    @apply placeholder:text-text-tertiary;
+    @apply transition-all duration-fast;
+    @apply focus:border-primary focus:bg-background;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    height: 48px;
+  }
+  
+  .input-error {
+    @apply input;
+    @apply border-error;
+    @apply focus:border-error;
+  }
+  
+  .textarea {
+    @apply input;
+    @apply py-3;
+    height: auto;
+    min-height: 120px;
+    resize: vertical;
+  }
+  
+  .select {
+    @apply input;
+    @apply cursor-pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 20px;
+    padding-right: 40px;
+  }
+  
+  /* ============================================
+     CARD COMPONENTS
+     ============================================ */
+  
+  .card {
+    @apply bg-background;
+    @apply border border-border-light;
+    @apply rounded-lg;
+    @apply p-6;
+  }
+  
+  .card-interactive {
+    @apply card;
+    @apply cursor-pointer;
+    @apply transition-all duration-normal;
+    @apply hover:border-border-medium hover:shadow-sm;
+    @apply hover:-translate-y-0.5;
+  }
+  
+  /* ============================================
+     TABLE COMPONENTS
+     ============================================ */
+  
+  .table {
+    @apply w-full;
+    @apply border-collapse;
+  }
+  
+  .table thead {
+    @apply border-b border-border;
+  }
+  
+  .table th {
+    @apply px-4 py-3;
+    @apply text-left text-label text-text-secondary;
+    @apply font-semibold;
+  }
+  
+  .table td {
+    @apply px-4 py-4;
+    @apply text-body text-text-primary;
+    @apply border-b border-border-light;
+  }
+  
+  .table tbody tr {
+    @apply transition-colors duration-fast;
+  }
+  
+  .table tbody tr:hover {
+    @apply bg-background-secondary;
+  }
+  
+  /* ============================================
+     BADGE COMPONENTS
+     ============================================ */
+  
+  .badge {
+    @apply inline-flex items-center;
+    @apply px-3 py-1;
+    @apply rounded-full;
+    @apply text-label-sm font-medium;
+  }
+  
+  .badge-success {
+    @apply badge;
+    @apply bg-success-light text-success-dark;
+  }
+  
+  .badge-error {
+    @apply badge;
+    @apply bg-error-light text-error-dark;
+  }
+  
+  .badge-warning {
+    @apply badge;
+    @apply bg-warning-light text-warning-dark;
+  }
+  
+  .badge-info {
+    @apply badge;
+    @apply bg-info-light text-info-dark;
+  }
+  
+  .badge-neutral {
+    @apply badge;
+    @apply bg-neutral-100 text-neutral-700;
+  }
+}
+
+@layer utilities {
+  /* ============================================
+     ANIMATION UTILITIES
+     ============================================ */
+  
+  .animate-fade-in {
+    animation: fadeIn 250ms ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 300ms ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 200ms ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* ============================================
+     LAYOUT UTILITIES
+     ============================================ */
+  
+  .container-centered {
+    @apply max-w-7xl mx-auto px-6 lg:px-8;
+  }
+  
+  .container-narrow {
+    @apply max-w-3xl mx-auto px-6;
+  }
+  
+  /* ============================================
+     TEXT UTILITIES
+     ============================================ */
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}

@@ -79,7 +79,7 @@
   - Verify network requests include Authorization headers
   - _Requirements: 1.2, 2.2, 3.2, 4.2_
 
-- [-] 6.1 Manual test: Fetch wordlists
+- [ ] 6.1 Manual test: Fetch wordlists
   - Open SavedWordlistsPage in browser
   - Verify wordlists load without errors
   - Check browser DevTools Network tab for Authorization header

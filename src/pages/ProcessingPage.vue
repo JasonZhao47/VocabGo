@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 page-enter">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 page-enter-stagger-1">
       <!-- Processing State -->
       <div v-if="isProcessing || isUploading" class="text-center">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">Processing Document</h2>
@@ -11,16 +11,16 @@
           <p class="text-lg font-medium text-gray-800 truncate">{{ currentFile.name }}</p>
         </div>
 
-        <!-- Loading Spinner -->
+        <!-- Loading Spinner with enhanced animation (Task 9.3) -->
         <div class="mb-6">
-          <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+          <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-black" style="animation-duration: 0.8s;"></div>
         </div>
 
-        <!-- Processing Stage -->
+        <!-- Processing Stage with animation (Task 9.3) -->
         <div v-if="processingStage" class="mb-6">
           <p class="text-sm text-gray-600 mb-2">Current Stage:</p>
           <div class="flex items-center justify-center space-x-2">
-            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-black transition-all duration-250 animate-fade-in">
               {{ stageLabel }}
             </span>
           </div>
@@ -127,7 +127,7 @@ const stageLabel = computed(() => {
   return stageMap[processingStage.value]
 })
 
-// Get stage indicator class based on current stage
+// Get stage indicator class based on current stage (Task 9.3: Enhanced with smooth transitions)
 function getStageIndicatorClass(stage: ProcessingStage): string {
   if (!processingStage.value) return 'bg-gray-300'
   
@@ -136,9 +136,9 @@ function getStageIndicatorClass(stage: ProcessingStage): string {
   const stageIndex = stageOrder.indexOf(stage)
   
   if (stageIndex < currentIndex) {
-    return 'bg-green-500' // Completed
+    return 'bg-green-500 success-pulse' // Completed with success animation
   } else if (stageIndex === currentIndex) {
-    return 'bg-blue-600 animate-pulse' // Current
+    return 'bg-black animate-pulse' // Current with pulse animation
   } else {
     return 'bg-gray-300' // Pending
   }

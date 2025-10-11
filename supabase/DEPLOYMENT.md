@@ -90,24 +90,33 @@ Create `.env.local` in project root:
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+GLM_API_KEY=your-glm-api-key
+GLM_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
+GLM_MODEL=glm-4-flash
 ```
 
-Get these values from:
-- Supabase Dashboard → Settings → API
+Get Supabase values from: Dashboard → Settings → API
 
-### Edge Function Environment Variables
+### Local Edge Function Environment Variables
 
-These will be set when deploying Edge Functions (Task 7):
+Create `supabase/.env` for local development:
 
 ```bash
 GLM_API_KEY=your-glm-api-key
 GLM_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
 GLM_MODEL=glm-4-flash
-MAX_CONCURRENT_UPLOADS=5
-UPLOAD_COOLDOWN_MS=60000
-MAX_FILE_SIZE_MB=50
-MAX_WORDS_PER_DOCUMENT=40
-FILE_RETENTION_HOURS=24
+```
+
+Then restart: `supabase functions serve`
+
+### Production Edge Function Secrets
+
+Set secrets for production deployment:
+
+```bash
+supabase secrets set GLM_API_KEY=your-glm-api-key --project-ref your-project-ref
+supabase secrets set GLM_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions --project-ref your-project-ref
+supabase secrets set GLM_MODEL=glm-4-flash --project-ref your-project-ref
 ```
 
 ## Step 6: Verify Deployment

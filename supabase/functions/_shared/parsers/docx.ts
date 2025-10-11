@@ -12,6 +12,8 @@ import {
 
 // Using mammoth for DOCX parsing via npm
 import mammoth from 'npm:mammoth@1.6.0'
+// Import Buffer from Node.js compatibility layer
+import { Buffer } from 'node:buffer'
 
 /**
  * Parse DOCX document and extract text
