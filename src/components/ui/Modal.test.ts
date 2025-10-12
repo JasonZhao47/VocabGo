@@ -3,16 +3,21 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import Modal from './Modal.vue';
 
+// Create mock variables in global scope
+const mockGsapSet = vi.fn();
+const mockGsapTo = vi.fn();
+const mockGsapFrom = vi.fn();
+const mockGsapFromTo = vi.fn();
+const mockTimelineFromTo = vi.fn().mockReturnThis();
+const mockTimelineTo = vi.fn().mockReturnThis();
+const mockTimelineKill = vi.fn();
+const mockOpen = vi.fn();
+const mockClose = vi.fn((modalEl: Element, backdropEl: Element, onComplete: () => void) => {
+  onComplete();
+});
+
 // Mock GSAP before imports
 vi.mock('gsap', () => {
-  const mockGsapSet = vi.fn();
-  const mockGsapTo = vi.fn();
-  const mockGsapFrom = vi.fn();
-  const mockGsapFromTo = vi.fn();
-  const mockTimelineFromTo = vi.fn().mockReturnThis();
-  const mockTimelineTo = vi.fn().mockReturnThis();
-  const mockTimelineKill = vi.fn();
-  
   return {
     default: {
       set: mockGsapSet,
@@ -30,11 +35,6 @@ vi.mock('gsap', () => {
 
 // Mock composables
 vi.mock('@/composables/useModalAnimation', () => {
-  const mockOpen = vi.fn();
-  const mockClose = vi.fn((modalEl: Element, backdropEl: Element, onComplete: () => void) => {
-    onComplete();
-  });
-  
   return {
     useModalAnimation: vi.fn(() => ({
       isOpen: { value: false },

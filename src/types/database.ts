@@ -144,6 +144,70 @@ export interface Database {
           cooldown_until?: string
         }
       }
+      practice_sets: {
+        Row: {
+          id: string
+          wordlist_id: string
+          questions: any // JSONB
+          created_at: string
+          share_url: string | null
+          is_shared: boolean
+        }
+        Insert: {
+          id?: string
+          wordlist_id: string
+          questions: any // JSONB
+          created_at?: string
+          share_url?: string | null
+          is_shared?: boolean
+        }
+        Update: {
+          id?: string
+          wordlist_id?: string
+          questions?: any // JSONB
+          created_at?: string
+          share_url?: string | null
+          is_shared?: boolean
+        }
+      }
+      practice_sessions: {
+        Row: {
+          id: string
+          practice_set_id: string
+          session_id: string
+          start_time: string
+          end_time: string | null
+          timer_duration: number | null
+          answers: any // JSONB
+          score: number | null
+          completed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          practice_set_id: string
+          session_id: string
+          start_time?: string
+          end_time?: string | null
+          timer_duration?: number | null
+          answers: any // JSONB
+          score?: number | null
+          completed?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          practice_set_id?: string
+          session_id?: string
+          start_time?: string
+          end_time?: string | null
+          timer_duration?: number | null
+          answers?: any // JSONB
+          score?: number | null
+          completed?: boolean
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -168,3 +232,11 @@ export type LLMMetricInsert = Database['public']['Tables']['llm_metrics']['Inser
 export type UploadCooldown = Database['public']['Tables']['upload_cooldowns']['Row']
 export type UploadCooldownInsert = Database['public']['Tables']['upload_cooldowns']['Insert']
 export type UploadCooldownUpdate = Database['public']['Tables']['upload_cooldowns']['Update']
+
+export type PracticeSet = Database['public']['Tables']['practice_sets']['Row']
+export type PracticeSetInsert = Database['public']['Tables']['practice_sets']['Insert']
+export type PracticeSetUpdate = Database['public']['Tables']['practice_sets']['Update']
+
+export type PracticeSession = Database['public']['Tables']['practice_sessions']['Row']
+export type PracticeSessionInsert = Database['public']['Tables']['practice_sessions']['Insert']
+export type PracticeSessionUpdate = Database['public']['Tables']['practice_sessions']['Update']

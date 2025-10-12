@@ -120,6 +120,19 @@
               {{ expandedWordlistId === wordlist.id ? 'Hide' : 'View' }}
             </button>
             
+            <!-- Practice Button (Secondary) -->
+            <button
+              @click.stop="startPractice(wordlist)"
+              :disabled="wordlist.wordCount < 4"
+              class="w-full h-10 px-4 text-[14px] font-semibold text-black bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              :title="wordlist.wordCount < 4 ? 'Minimum 4 words required' : 'Practice with questions'"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Practice Questions
+            </button>
+            
             <!-- Secondary Actions Row -->
             <div class="flex gap-2">
               <!-- Export Button (Secondary) -->
@@ -233,18 +246,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Practice Setup Modal -->
+    <div 
+      v-if="showPracticeSetup"
+      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-250 p-4"
+      @click.self="closePracticeSetup"
+    >
+      <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-250">
+        <PracticeSetup
+          v-if="practiceWordlist"
+          :wordlist-id="practiceWordlist.id"
+          :wordlist-name="practiceWordlist.filename"
+          :word-count="practiceWordlist.wordCount"
+          :is-generating="isGeneratingQuestions"
+          @generate="handleGenerateQuestions"
+          @cancel="closePracticeSetup"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useWordlist } from '@/composables/useWordlist'
 import type { WordlistRecord } from '@/state/wordlistsState'
 import WordlistCardSkeleton from '@/components/ui/WordlistCardSkeleton.vue'
+import PracticeSetup from '@/components/practice/PracticeSetup.vue'
 import { staggerAnimation } from '@/utils/staggerAnimation'
 import { useMotionPreference } from '@/composables/useMotionPreference'
 import { animationConfig } from '@/config/animations'
+import { useToast } from '@/composables/useToast'
+import type { QuestionType } from '@/types/practice'
 import gsap from 'gsap'
+
+const router = useRouter()
 
 // Use the wordlist composable
 const {
@@ -261,6 +299,9 @@ const {
 // Motion preference detection
 const { shouldAnimate, getDuration } = useMotionPreference()
 
+// Toast notifications
+const { showToast } = useToast()
+
 // Local state for UI interactions
 const searchQuery = ref('')
 const expandedWordlistId = ref<string | null>(null)
@@ -269,6 +310,11 @@ const deleteTarget = ref<{ id: string; filename: string } | null>(null)
 const exportingId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 const hasAnimated = ref(false)
+
+// Practice state
+const showPracticeSetup = ref(false)
+const practiceWordlist = ref<WordlistRecord | null>(null)
+const isGeneratingQuestions = ref(false)
 
 // Filtered wordlists based on search query
 const filteredWordlists = computed(() => {
@@ -294,14 +340,20 @@ onMounted(async () => {
  * Animate wordlist cards with stagger effect
  */
 async function animateCards() {
-  if (!shouldAnimate.value || hasAnimated.value) return
+  if (hasAnimated.value) return
+  
+  // Skip animations if user prefers reduced motion
+  if (!shouldAnimate.value) {
+    hasAnimated.value = true
+    return
+  }
 
   await nextTick()
   
   const cards = document.querySelectorAll('.wordlist-card')
   if (cards.length === 0) return
 
-  // Set initial state
+  // Set initial state for animation
   gsap.set(cards, {
     opacity: 0,
     y: 20,
@@ -361,8 +413,8 @@ watch(
       if (!hasAnimated.value) {
         // First load - animate all cards
         await animateCards()
-      } else if (newLength !== oldLength) {
-        // List updated - animate new cards
+      } else if (newLength !== oldLength && newLength > oldLength) {
+        // List updated with MORE cards - animate new cards only
         await animateNewCards()
       }
     }
@@ -370,9 +422,12 @@ watch(
   { immediate: true }
 )
 
-// Reset animation flag when search changes
-watch(searchQuery, () => {
-  hasAnimated.value = false
+// Reset animation flag when search changes (but only if it actually filters results)
+watch(searchQuery, (newQuery, oldQuery) => {
+  // Only reset animation if search actually changed and we have wordlists
+  if (newQuery !== oldQuery && wordlists.value.length > 0) {
+    hasAnimated.value = false
+  }
 })
 
 /**
@@ -541,6 +596,56 @@ async function handleExport(wordlist: WordlistRecord) {
   exportingId.value = wordlist.id
   await downloadWordlist(wordlist)
   exportingId.value = null
+}
+
+/**
+ * Start practice session for a wordlist
+ */
+function startPractice(wordlist: WordlistRecord) {
+  // Validate minimum word count
+  if (wordlist.wordCount < 4) {
+    showToast('This wordlist needs at least 4 words to generate practice questions.', 'error')
+    return
+  }
+
+  practiceWordlist.value = wordlist
+  showPracticeSetup.value = true
+}
+
+/**
+ * Close practice setup modal
+ */
+function closePracticeSetup() {
+  showPracticeSetup.value = false
+  practiceWordlist.value = null
+  isGeneratingQuestions.value = false
+}
+
+/**
+ * Handle question generation
+ */
+async function handleGenerateQuestions(payload: { questionTypes: QuestionType[]; timerDuration?: number }) {
+  if (!practiceWordlist.value) return
+
+  // Navigate to practice page with query params
+  const queryParams: Record<string, string> = {
+    wordlistId: practiceWordlist.value.id,
+    wordlistName: practiceWordlist.value.filename,
+    questionTypes: payload.questionTypes.join(','),
+  }
+
+  if (payload.timerDuration) {
+    queryParams.timerDuration = payload.timerDuration.toString()
+  }
+
+  // Close modal and navigate
+  closePracticeSetup()
+
+  // Use router to navigate
+  router.push({
+    path: '/practice',
+    query: queryParams,
+  })
 }
 </script>
 
@@ -717,6 +822,11 @@ async function handleExport(wordlist: WordlistRecord) {
 
 .wordlist-table-row:hover {
   transform: translateX(2px);
+}
+
+/* Ensure wordlist cards are visible by default */
+.wordlist-card {
+  opacity: 1;
 }
 </style>
 

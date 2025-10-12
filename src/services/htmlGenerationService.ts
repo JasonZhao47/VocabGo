@@ -1,0 +1,425 @@
+import type { Question } from '@/types/practice'
+
+export interface StaticHtmlOptions {
+  questions: Question[]
+  wordlistName: string
+  shareUrl?: string
+}
+
+/**
+ * Generate a standalone HTML file for practice questions
+ * This HTML file includes all necessary JavaScript and CSS to work offline
+ */
+export function generateStaticHtml(options: StaticHtmlOptions): string {
+  const { questions, wordlistName, shareUrl } = options
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(wordlistName)} - Practice Questions</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f9fafb;
+      color: #000000;
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .question {
+      margin-bottom: 32px;
+      padding: 24px;
+      background: #f9fafb;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .question-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #000000;
+    }
+
+    .question-type {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .question-content {
+      font-size: 15px;
+      color: #000000;
+      margin-bottom: 16px;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option {
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+    }
+
+    .option:hover {
+      border-color: #9ca3af;
+      background: #f9fafb;
+    }
+
+    .option.selected {
+      border-color: #000000;
+      background: #f3f4f6;
+    }
+
+    .option.correct {
+      border-color: #10b981;
+      background: #ecfdf5;
+    }
+
+    .option.incorrect {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .input-answer {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      outline: none;
+      transition: all 150ms ease-out;
+    }
+
+    .input-answer:focus {
+      border-color: #000000;
+    }
+
+    .matching-pairs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .matching-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .matching-item {
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+    }
+
+    .matching-item:hover {
+      border-color: #9ca3af;
+    }
+
+    .matching-item.selected {
+      border-color: #000000;
+      background: #f3f4f6;
+    }
+
+    .matching-item.matched {
+      border-color: #10b981;
+      background: #ecfdf5;
+      cursor: default;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      background: #000000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+    }
+
+    .btn:hover {
+      background: #1f2937;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .results {
+      text-align: center;
+      padding: 32px;
+    }
+
+    .score {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 20px;
+      }
+
+      .matching-pairs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${escapeHtml(wordlistName)}</h1>
+      <p>Practice Questions</p>
+    </div>
+
+    <div id="app">
+      <div id="questions-container"></div>
+      <div id="results-container" style="display: none;"></div>
+    </div>
+
+    <div class="footer">
+      <p>Generated by VocabGo${shareUrl ? ` • <a href="${escapeHtml(shareUrl)}" style="color: #000000;">Share this practice set</a>` : ''}</p>
+    </div>
+  </div>
+
+  <script>
+    const questions = ${JSON.stringify(questions)};
+    let currentQuestionIndex = 0;
+    let answers = {};
+    let score = 0;
+
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = \`
+          <div class="question-header">
+            <span class="question-number">Question \${index + 1} of \${questions.length}</span>
+            <span class="question-type">\${formatQuestionType(question.type)}</span>
+          </div>
+          <div class="question-content" id="question-\${index}"></div>
+        \`;
+        container.appendChild(questionDiv);
+
+        renderQuestion(question, index);
+      });
+
+      const submitBtn = document.createElement('button');
+      submitBtn.className = 'btn';
+      submitBtn.textContent = 'Submit Answers';
+      submitBtn.onclick = submitAnswers;
+      container.appendChild(submitBtn);
+    }
+
+    function renderQuestion(question, index) {
+      const contentDiv = document.getElementById(\`question-\${index}\`);
+
+      if (question.type === 'multiple-choice') {
+        contentDiv.innerHTML = \`
+          <p style="margin-bottom: 16px;">\${escapeHtml(question.sentence)}</p>
+          <div class="options" id="options-\${index}"></div>
+        \`;
+
+        const optionsDiv = document.getElementById(\`options-\${index}\`);
+        question.options.forEach((option, optionIndex) => {
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'option';
+          optionDiv.textContent = option.text;
+          optionDiv.onclick = () => selectOption(index, option.text);
+          optionsDiv.appendChild(optionDiv);
+        });
+      } else if (question.type === 'fill-blank') {
+        contentDiv.innerHTML = \`
+          <p style="margin-bottom: 16px;">\${escapeHtml(question.sentence)}</p>
+          <input type="text" class="input-answer" id="answer-\${index}" placeholder="Type your answer...">
+        \`;
+      } else if (question.type === 'matching') {
+        contentDiv.innerHTML = \`
+          <p style="margin-bottom: 16px;">Match English words with their Mandarin translations</p>
+          <div class="matching-pairs">
+            <div class="matching-column" id="english-\${index}"></div>
+            <div class="matching-column" id="mandarin-\${index}"></div>
+          </div>
+        \`;
+
+        const englishDiv = document.getElementById(\`english-\${index}\`);
+        const mandarinDiv = document.getElementById(\`mandarin-\${index}\`);
+
+        question.pairs.forEach((pair, pairIndex) => {
+          const englishItem = document.createElement('div');
+          englishItem.className = 'matching-item';
+          englishItem.textContent = pair.english;
+          englishItem.dataset.english = pair.english;
+          englishDiv.appendChild(englishItem);
+        });
+
+        question.shuffledMandarin.forEach((mandarin, pairIndex) => {
+          const mandarinItem = document.createElement('div');
+          mandarinItem.className = 'matching-item';
+          mandarinItem.textContent = mandarin;
+          mandarinItem.dataset.mandarin = mandarin;
+          mandarinDiv.appendChild(mandarinItem);
+        });
+      }
+    }
+
+    function selectOption(questionIndex, optionText) {
+      answers[questionIndex] = optionText;
+      const optionsDiv = document.getElementById(\`options-\${questionIndex}\`);
+      Array.from(optionsDiv.children).forEach(child => {
+        child.classList.remove('selected');
+        if (child.textContent === optionText) {
+          child.classList.add('selected');
+        }
+      });
+    }
+
+    function submitAnswers() {
+      // Collect fill-blank answers
+      questions.forEach((question, index) => {
+        if (question.type === 'fill-blank') {
+          const input = document.getElementById(\`answer-\${index}\`);
+          if (input) {
+            answers[index] = input.value;
+          }
+        }
+      });
+
+      // Calculate score
+      let correct = 0;
+      questions.forEach((question, index) => {
+        if (question.type === 'multiple-choice') {
+          const correctOption = question.options.find(opt => opt.isCorrect);
+          if (answers[index] === correctOption.text) {
+            correct++;
+          }
+        } else if (question.type === 'fill-blank') {
+          if (answers[index] && answers[index].toLowerCase() === question.correctAnswer.toLowerCase()) {
+            correct++;
+          }
+        }
+      });
+
+      score = Math.round((correct / questions.length) * 100);
+
+      // Show results
+      document.getElementById('questions-container').style.display = 'none';
+      const resultsDiv = document.getElementById('results-container');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = \`
+        <div class="results">
+          <div class="score">\${score}%</div>
+          <p>You answered \${correct} out of \${questions.length} questions correctly</p>
+          <button class="btn" onclick="location.reload()" style="margin-top: 24px;">Try Again</button>
+        </div>
+      \`;
+    }
+
+    function formatQuestionType(type) {
+      const types = {
+        'matching': 'Matching',
+        'fill-blank': 'Fill in the Blank',
+        'multiple-choice': 'Multiple Choice'
+      };
+      return types[type] || type;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize
+    renderQuestions();
+  </script>
+</body>
+</html>`
+
+  return html
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char])
+}

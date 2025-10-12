@@ -33,6 +33,11 @@ const router = createRouter({
       component: () => import('@/pages/SavedWordlistsPage.vue')
     },
     { 
+      path: '/practice', 
+      name: 'practice', 
+      component: () => import('@/pages/PracticePage.vue')
+    },
+    { 
       path: '/toast-demo', 
       name: 'toast-demo', 
       component: () => import('@/pages/ToastDemo.vue')

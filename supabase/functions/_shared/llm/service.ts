@@ -13,12 +13,11 @@ import {
   LLMErrorCode,
 } from './types.ts'
 
-const config = getLLMConfig()
-
 /**
  * Call GLM-Flash API
  */
 export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
+  const config = getLLMConfig()
   const startTime = Date.now()
 
   try {

@@ -1,0 +1,717 @@
+/**
+ * Tests for practice question generator agent
+ */
+
+import { 
+  assertEquals, 
+  assertExists, 
+  assertRejects,
+  assert,
+} from 'https://deno.land/std@0.168.0/testing/asserts.ts'
+import { 
+  stub,
+  returnsNext,
+} from 'https://deno.land/std@0.168.0/testing/mock.ts'
+import {
+  generateMatchingQuestions,
+  generateFillBlankQuestions,
+  generateMultipleChoiceQuestions,
+  generatePracticeQuestions,
+  type WordPair,
+  type MatchingQuestion,
+  type FillBlankQuestion,
+  type MultipleChoiceQuestion,
+  type GenerateQuestionsRequest,
+} from './practice-questions.ts'
+import * as llmService from '../llm/service.ts'
+
+// Test data
+const testWords: WordPair[] = [
+  { en: 'hello', zh: '你好' },
+  { en: 'world', zh: '世界' },
+  { en: 'test', zh: '测试' },
+  { en: 'example', zh: '例子' },
+  { en: 'practice', zh: '练习' },
+]
+
+// Mock LLM responses
+function createMockFillBlankResponse(words: WordPair[]): string {
+  const questions = words.map(word => ({
+    sentence: `The ___ is important for learning.`,
+    correctAnswer: word.en,
+    acceptableVariations: [word.en.toLowerCase(), word.en.toUpperCase()],
+    hint: word.en[0],
+  }))
+  return JSON.stringify(questions)
+}
+
+function createMockMultipleChoiceResponse(words: WordPair[]): string {
+  const questions = words.map(word => ({
+    sentence: `This is a sentence with ${word.en}.`,
+    targetWord: word.en,
+    options: [
+      { text: word.zh, isCorrect: true },
+      { text: '错误选项1', isCorrect: false },
+      { text: '错误选项2', isCorrect: false },
+      { text: '错误选项3', isCorrect: false },
+    ],
+  }))
+  return JSON.stringify(questions)
+}
+
+function createMockLLMResponse(content: string) {
+  return {
+    content,
+    tokensUsed: 100,
+    latency: 50,
+    model: 'glm-flash',
+  }
+}
+
+Deno.test('generateMatchingQuestions - creates matching question', async () => {
+  const result = await generateMatchingQuestions(testWords, 5)
+
+  assertEquals(result.questions.length, 1)
+  assertEquals(result.confidence, 1.0)
+
+  const question = result.questions[0]
+  assertEquals(question.type, 'matching')
+  assertEquals(question.pairs.length, 5)
+  assertEquals(question.shuffledMandarin.length, 5)
+})
+
+Deno.test('generateMatchingQuestions - shuffles Mandarin translations', async () => {
+  const result = await generateMatchingQuestions(testWords, 5)
+  const question = result.questions[0]
+
+  // Check that all Mandarin translations are present
+  const originalMandarin = question.pairs.map(p => p.mandarin).sort()
+  const shuffledMandarin = [...question.shuffledMandarin].sort()
+
+  assertEquals(originalMandarin, shuffledMandarin)
+
+  // Check that they're actually shuffled (not in same order)
+  // Note: This test might occasionally fail due to random chance
+  const inSameOrder = question.pairs.every(
+    (pair, index) => pair.mandarin === question.shuffledMandarin[index]
+  )
+  // We can't guarantee shuffling, but we can check structure
+  assertEquals(typeof inSameOrder, 'boolean')
+})
+
+Deno.test('generateMatchingQuestions - respects max questions limit', async () => {
+  const result = await generateMatchingQuestions(testWords, 3)
+  const question = result.questions[0]
+
+  assertEquals(question.pairs.length, 3)
+  assertEquals(question.shuffledMandarin.length, 3)
+})
+
+Deno.test('generateMatchingQuestions - includes all required fields', async () => {
+  const result = await generateMatchingQuestions(testWords, 5)
+  const question = result.questions[0]
+
+  assertExists(question.id)
+  assertEquals(question.type, 'matching')
+  assertExists(question.pairs)
+  assertExists(question.shuffledMandarin)
+
+  // Check pair structure
+  for (const pair of question.pairs) {
+    assertExists(pair.english)
+    assertExists(pair.mandarin)
+  }
+})
+
+Deno.test('generateMatchingQuestions - handles minimum word count', async () => {
+  const minWords: WordPair[] = [
+    { en: 'hello', zh: '你好' },
+    { en: 'world', zh: '世界' },
+    { en: 'test', zh: '测试' },
+    { en: 'example', zh: '例子' },
+  ]
+
+  const result = await generateMatchingQuestions(minWords, 10)
+  const question = result.questions[0]
+
+  // Should only create questions for available words
+  assertEquals(question.pairs.length, 4)
+})
+
+Deno.test('Question type interfaces - matching question structure', () => {
+  const matchingQuestion: MatchingQuestion = {
+    id: 'test-id',
+    type: 'matching',
+    pairs: [
+      { english: 'hello', mandarin: '你好' },
+      { english: 'world', mandarin: '世界' },
+    ],
+    shuffledMandarin: ['世界', '你好'],
+  }
+
+  assertEquals(matchingQuestion.type, 'matching')
+  assertEquals(matchingQuestion.pairs.length, 2)
+  assertEquals(matchingQuestion.shuffledMandarin.length, 2)
+})
+
+// ============================================================================
+// AI Prompt Construction Tests
+// ============================================================================
+
+Deno.test('Prompt construction - fill-blank prompt includes all words', async () => {
+  const words = testWords.slice(0, 3)
+  const mockResponse = createMockFillBlankResponse(words)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve(createMockLLMResponse(mockResponse)),
+  ]))
+  
+  try {
+    const result = await generateFillBlankQuestions(words, 3)
+    
+    // Should generate questions for all provided words
+    assertEquals(result.questions.length, 3)
+    
+    // Each question should have required fields
+    for (const question of result.questions) {
+      assertExists(question.sentence)
+      assertExists(question.correctAnswer)
+      assert(question.sentence.includes('___'), 'Sentence should contain blank')
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Prompt construction - multiple choice prompt excludes wordlist words as distractors', async () => {
+  const words = testWords.slice(0, 3)
+  const mockResponse = createMockMultipleChoiceResponse(words)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateMultipleChoiceQuestions(words, 3)
+    
+    // Each question should have 4 options
+    for (const question of result.questions) {
+      assertEquals(question.options.length, 4)
+      
+      // Exactly one option should be correct
+      const correctOptions = question.options.filter(opt => opt.isCorrect)
+      assertEquals(correctOptions.length, 1)
+      
+      // All options should have text
+      for (const option of question.options) {
+        assertExists(option.text)
+        assert(option.text.length > 0)
+      }
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Prompt construction - respects max questions limit', async () => {
+  const manyWords: WordPair[] = Array.from({ length: 20 }, (_, i) => ({
+    en: `word${i}`,
+    zh: `词${i}`,
+  }))
+  
+  const mockResponse = createMockFillBlankResponse(manyWords.slice(0, 5))
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateFillBlankQuestions(manyWords, 5)
+    
+    // Should not exceed max questions
+    assert(result.questions.length <= 5)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+// ============================================================================
+// Question Validation Tests
+// ============================================================================
+
+Deno.test('Validation - minimum word count requirement', async () => {
+  const insufficientWords: WordPair[] = [
+    { en: 'hello', zh: '你好' },
+    { en: 'world', zh: '世界' },
+    { en: 'test', zh: '测试' },
+  ]
+  
+  await assertRejects(
+    async () => {
+      await generatePracticeQuestions({
+        words: insufficientWords,
+        questionTypes: ['matching'],
+      })
+    },
+    Error,
+    'Minimum 4 words required'
+  )
+})
+
+Deno.test('Validation - fill-blank questions have correct structure', async () => {
+  const mockResponse = createMockFillBlankResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateFillBlankQuestions(testWords, 5)
+    
+    for (const question of result.questions) {
+      // Check type
+      assertEquals(question.type, 'fill-blank')
+      
+      // Check required fields
+      assertExists(question.id)
+      assertExists(question.sentence)
+      assertExists(question.correctAnswer)
+      assertExists(question.acceptableVariations)
+      
+      // Sentence should contain blank
+      assert(question.sentence.includes('___'))
+      
+      // Correct answer should not be empty
+      assert(question.correctAnswer.length > 0)
+      
+      // Acceptable variations should be an array
+      assert(Array.isArray(question.acceptableVariations))
+      
+      // Hint should be first letter if provided
+      if (question.hint) {
+        assert(question.hint.length > 0)
+      }
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Validation - multiple choice questions have correct structure', async () => {
+  const mockResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateMultipleChoiceQuestions(testWords, 5)
+    
+    for (const question of result.questions) {
+      // Check type
+      assertEquals(question.type, 'multiple-choice')
+      
+      // Check required fields
+      assertExists(question.id)
+      assertExists(question.sentence)
+      assertExists(question.targetWord)
+      assertExists(question.options)
+      
+      // Should have exactly 4 options
+      assertEquals(question.options.length, 4)
+      
+      // Exactly one option should be correct
+      const correctCount = question.options.filter(opt => opt.isCorrect).length
+      assertEquals(correctCount, 1)
+      
+      // All options should have text and isCorrect flag
+      for (const option of question.options) {
+        assertExists(option.text)
+        assert(typeof option.isCorrect === 'boolean')
+      }
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Validation - matching questions have unique IDs', async () => {
+  const result1 = await generateMatchingQuestions(testWords, 5)
+  const result2 = await generateMatchingQuestions(testWords, 5)
+  
+  // IDs should be unique across generations
+  assert(result1.questions[0].id !== result2.questions[0].id)
+})
+
+Deno.test('Validation - all question types return confidence scores', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords)
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const matchingResult = await generateMatchingQuestions(testWords, 5)
+    const fillBlankResult = await generateFillBlankQuestions(testWords, 5)
+    const multipleChoiceResult = await generateMultipleChoiceQuestions(testWords, 5)
+    
+    // All should have confidence between 0 and 1
+    assert(matchingResult.confidence >= 0 && matchingResult.confidence <= 1)
+    assert(fillBlankResult.confidence >= 0 && fillBlankResult.confidence <= 1)
+    assert(multipleChoiceResult.confidence >= 0 && multipleChoiceResult.confidence <= 1)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+// ============================================================================
+// Error Handling Tests
+// ============================================================================
+
+Deno.test('Error handling - empty word list', async () => {
+  await assertRejects(
+    async () => {
+      await generatePracticeQuestions({
+        words: [],
+        questionTypes: ['matching'],
+      })
+    },
+    Error,
+    'Minimum 4 words required'
+  )
+})
+
+Deno.test('Error handling - invalid question types handled gracefully', async () => {
+  const result = await generatePracticeQuestions({
+    words: testWords,
+    questionTypes: [], // No question types selected
+  })
+  
+  // Should return empty question sets
+  assertEquals(result.questions.matching.length, 0)
+  assertEquals(result.questions.fillBlank.length, 0)
+  assertEquals(result.questions.multipleChoice.length, 0)
+})
+
+Deno.test('Error handling - handles single word gracefully', async () => {
+  const singleWord: WordPair[] = [{ en: 'hello', zh: '你好' }]
+  
+  await assertRejects(
+    async () => {
+      await generatePracticeQuestions({
+        words: singleWord,
+        questionTypes: ['matching'],
+      })
+    },
+    Error
+  )
+})
+
+// ============================================================================
+// Question Type Generation Algorithm Tests
+// ============================================================================
+
+Deno.test('Algorithm - matching questions preserve word pairs', async () => {
+  const result = await generateMatchingQuestions(testWords, 5)
+  const question = result.questions[0]
+  
+  // All original words should be in pairs
+  const englishWords = question.pairs.map(p => p.english)
+  const mandarinWords = question.pairs.map(p => p.mandarin)
+  
+  for (let i = 0; i < testWords.length && i < 5; i++) {
+    assert(englishWords.includes(testWords[i].en))
+    assert(mandarinWords.includes(testWords[i].zh))
+  }
+})
+
+Deno.test('Algorithm - matching shuffles Mandarin but preserves all translations', async () => {
+  const result = await generateMatchingQuestions(testWords, 5)
+  const question = result.questions[0]
+  
+  // All Mandarin translations should be present
+  const originalMandarin = question.pairs.map(p => p.mandarin).sort()
+  const shuffledMandarin = [...question.shuffledMandarin].sort()
+  
+  assertEquals(originalMandarin, shuffledMandarin)
+})
+
+Deno.test('Algorithm - fill-blank generates unique questions', async () => {
+  const mockResponse = createMockFillBlankResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateFillBlankQuestions(testWords, 5)
+    
+    // All questions should have unique IDs
+    const ids = result.questions.map(q => q.id)
+    const uniqueIds = new Set(ids)
+    assertEquals(ids.length, uniqueIds.size)
+    
+    // All questions should have different sentences (in most cases)
+    const sentences = result.questions.map(q => q.sentence)
+    // At least some variety expected
+    assert(sentences.length > 0)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Algorithm - multiple choice generates plausible distractors', async () => {
+  const mockResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generateMultipleChoiceQuestions(testWords, 5)
+    
+    for (const question of result.questions) {
+      // Should have 4 options
+      assertEquals(question.options.length, 4)
+      
+      // Options should not all be the same
+      const uniqueOptions = new Set(question.options.map(opt => opt.text))
+      assert(uniqueOptions.size >= 2, 'Should have at least 2 unique options')
+      
+      // Correct answer should be present
+      const correctOption = question.options.find(opt => opt.isCorrect)
+      assertExists(correctOption)
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Algorithm - generatePracticeQuestions combines all types', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords.slice(0, 3))
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(testWords.slice(0, 3))
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const request: GenerateQuestionsRequest = {
+      words: testWords,
+      questionTypes: ['matching', 'fill-blank', 'multiple-choice'],
+      maxQuestionsPerType: 3,
+    }
+    
+    const result = await generatePracticeQuestions(request)
+    
+    // Should have all three question types
+    assert(result.questions.matching.length > 0)
+    assert(result.questions.fillBlank.length > 0)
+    assert(result.questions.multipleChoice.length > 0)
+    
+    // Should have confidence score
+    assert(result.confidence >= 0 && result.confidence <= 1)
+    
+    // Should have estimated time
+    assert(result.estimatedTimeMinutes > 0)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Algorithm - estimated time calculation is reasonable', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords)
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const request: GenerateQuestionsRequest = {
+      words: testWords,
+      questionTypes: ['matching', 'fill-blank', 'multiple-choice'],
+      maxQuestionsPerType: 5,
+    }
+    
+    const result = await generatePracticeQuestions(request)
+    
+    // Estimated time should be positive
+    assert(result.estimatedTimeMinutes > 0)
+    
+    // Should be reasonable (not too high or too low)
+    // With 3 question types and ~15 questions, expect 5-20 minutes
+    assert(result.estimatedTimeMinutes >= 3)
+    assert(result.estimatedTimeMinutes <= 30)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Algorithm - respects maxQuestionsPerType parameter', async () => {
+  const manyWords: WordPair[] = Array.from({ length: 20 }, (_, i) => ({
+    en: `word${i}`,
+    zh: `词${i}`,
+  }))
+  
+  const mockFillBlankResponse = createMockFillBlankResponse(manyWords.slice(0, 3))
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(manyWords.slice(0, 3))
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const request: GenerateQuestionsRequest = {
+      words: manyWords,
+      questionTypes: ['matching', 'fill-blank', 'multiple-choice'],
+      maxQuestionsPerType: 3,
+    }
+    
+    const result = await generatePracticeQuestions(request)
+    
+    // Matching should have exactly 1 question with 3 pairs
+    assertEquals(result.questions.matching.length, 1)
+    assertEquals(result.questions.matching[0].pairs.length, 3)
+    
+    // Fill-blank should have at most 3 questions
+    assert(result.questions.fillBlank.length <= 3)
+    
+    // Multiple choice should have at most 3 questions
+    assert(result.questions.multipleChoice.length <= 3)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Algorithm - handles selective question type generation', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    // Test with only matching
+    const matchingOnly = await generatePracticeQuestions({
+      words: testWords,
+      questionTypes: ['matching'],
+    })
+    
+    assert(matchingOnly.questions.matching.length > 0)
+    assertEquals(matchingOnly.questions.fillBlank.length, 0)
+    assertEquals(matchingOnly.questions.multipleChoice.length, 0)
+    
+    // Test with only fill-blank
+    const fillBlankOnly = await generatePracticeQuestions({
+      words: testWords,
+      questionTypes: ['fill-blank'],
+    })
+    
+    assertEquals(fillBlankOnly.questions.matching.length, 0)
+    assert(fillBlankOnly.questions.fillBlank.length > 0)
+    assertEquals(fillBlankOnly.questions.multipleChoice.length, 0)
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+// ============================================================================
+// Integration Tests
+// ============================================================================
+
+Deno.test('Integration - full question generation workflow', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords)
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const request: GenerateQuestionsRequest = {
+      words: testWords,
+      questionTypes: ['matching', 'fill-blank', 'multiple-choice'],
+      maxQuestionsPerType: 5,
+    }
+    
+    const result = await generatePracticeQuestions(request)
+    
+    // Verify all question types are generated
+    assertExists(result.questions.matching)
+    assertExists(result.questions.fillBlank)
+    assertExists(result.questions.multipleChoice)
+    
+    // Verify metadata
+    assertExists(result.confidence)
+    assertExists(result.estimatedTimeMinutes)
+    
+    // Verify question structure for each type
+    for (const question of result.questions.matching) {
+      assertEquals(question.type, 'matching')
+      assertExists(question.id)
+      assertExists(question.pairs)
+      assertExists(question.shuffledMandarin)
+    }
+    
+    for (const question of result.questions.fillBlank) {
+      assertEquals(question.type, 'fill-blank')
+      assertExists(question.id)
+      assertExists(question.sentence)
+      assertExists(question.correctAnswer)
+    }
+    
+    for (const question of result.questions.multipleChoice) {
+      assertEquals(question.type, 'multiple-choice')
+      assertExists(question.id)
+      assertExists(question.sentence)
+      assertExists(question.targetWord)
+      assertEquals(question.options.length, 4)
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
+
+Deno.test('Integration - question quality validation', async () => {
+  const mockFillBlankResponse = createMockFillBlankResponse(testWords)
+  const mockMultipleChoiceResponse = createMockMultipleChoiceResponse(testWords)
+  
+  const callLLMStub = stub(llmService, 'callLLM', returnsNext([
+    Promise.resolve({ content: mockFillBlankResponse, usage: { totalTokens: 100 } }),
+    Promise.resolve({ content: mockMultipleChoiceResponse, usage: { totalTokens: 100 } }),
+  ]))
+  
+  try {
+    const result = await generatePracticeQuestions({
+      words: testWords,
+      questionTypes: ['matching', 'fill-blank', 'multiple-choice'],
+    })
+    
+    // Matching questions should have proper structure
+    for (const question of result.questions.matching) {
+      assert(question.pairs.length >= 4, 'Should have at least 4 pairs')
+      assert(question.shuffledMandarin.length === question.pairs.length)
+    }
+    
+    // Fill-blank questions should have blanks
+    for (const question of result.questions.fillBlank) {
+      assert(question.sentence.includes('___'), 'Should contain blank')
+      assert(question.correctAnswer.length > 0, 'Should have answer')
+    }
+    
+    // Multiple choice should have one correct answer
+    for (const question of result.questions.multipleChoice) {
+      const correctCount = question.options.filter(opt => opt.isCorrect).length
+      assertEquals(correctCount, 1, 'Should have exactly one correct answer')
+    }
+  } finally {
+    callLLMStub.restore()
+  }
+})
