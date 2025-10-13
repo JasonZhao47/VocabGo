@@ -89,12 +89,11 @@ export function useWordlist() {
    */
   async function removeWordlist(id: string): Promise<boolean> {
     try {
-      setLoading(true)
+      // Don't set loading state for delete - it causes UI flicker
       await deleteWordlist(id)
       
-      // Remove from local state
+      // Remove from local state immediately
       remove(id)
-      setLoading(false)
       
       toast.success('Wordlist deleted successfully!')
       return true

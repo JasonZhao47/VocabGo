@@ -201,19 +201,24 @@ export async function generateMultipleChoiceQuestions(
   words: WordPair[],
   maxQuestions: number
 ): Promise<{ questions: MultipleChoiceQuestion[]; confidence: number }> {
+  console.log(`[Practice] Generating multiple choice questions for ${words.length} words, max: ${maxQuestions}`)
+  
   // Limit to max questions
   const selectedWords = words.slice(0, Math.min(maxQuestions, words.length))
 
   // Build AI prompt
   const prompt = buildMultipleChoicePrompt(selectedWords, words)
+  console.log(`[Practice] Prompt built, length: ${prompt.length} chars`)
 
   try {
+    console.log(`[Practice] Calling LLM for multiple choice questions...`)
     const response = await callLLM({
       prompt,
       systemPrompt: 'You are an expert English teacher creating practice exercises for English learners.',
       maxTokens: 3000,
       temperature: 0.7,
     })
+    console.log(`[Practice] LLM response received for multiple choice`)
 
     // Parse response
     const questions = parseMultipleChoiceResponse(response.content, selectedWords)

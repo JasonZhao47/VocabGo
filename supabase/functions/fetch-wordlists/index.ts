@@ -6,6 +6,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getSessionId, isHealthCheck, createUnauthorizedResponse, createHealthCheckResponse } from '../_shared/auth.ts'
 
 interface WordlistRecord {
   id: string
@@ -37,6 +38,11 @@ serve(async (req) => {
     })
   }
 
+  // Handle health checks gracefully
+  if (isHealthCheck(req)) {
+    return createHealthCheckResponse()
+  }
+
   try {
     // Get Supabase client
     const supabaseClient = createClient(
@@ -44,24 +50,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Get session ID from custom header
-    const sessionId = req.headers.get('X-Session-ID')
+    // Get and validate session ID
+    const auth = getSessionId(req)
     
-    if (!sessionId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'BAD_REQUEST',
-            message: 'Session ID required',
-          },
-        } as FetchResponse),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        }
-      )
+    if (!auth.isValid || !auth.sessionId) {
+      return createUnauthorizedResponse(auth.error)
     }
+
+    const sessionId = auth.sessionId
 
     // Fetch wordlists from database
     const { data, error } = await supabaseClient

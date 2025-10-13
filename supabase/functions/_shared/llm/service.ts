@@ -20,6 +20,9 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
   const config = getLLMConfig()
   const startTime = Date.now()
 
+  console.log(`[LLM] Starting API call - timeout: ${config.timeoutMs}ms, model: ${config.model}`)
+  console.log(`[LLM] Prompt length: ${request.prompt.length} chars, maxTokens: ${request.maxTokens || config.defaultMaxTokens}`)
+
   try {
     // Build API request
     const apiRequest: GLMAPIRequest = {
@@ -46,10 +49,14 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
 
     // Create abort controller for timeout
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs)
+    const timeoutId = setTimeout(() => {
+      console.log(`[LLM] Request timeout after ${config.timeoutMs}ms`)
+      controller.abort()
+    }, config.timeoutMs)
 
     try {
       // Make API call
+      console.log(`[LLM] Sending request to ${config.apiUrl}`)
       const response = await fetch(config.apiUrl, {
         method: 'POST',
         headers: {
@@ -61,6 +68,7 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
       })
 
       clearTimeout(timeoutId)
+      console.log(`[LLM] Received response - status: ${response.status}`)
 
       // Handle non-200 responses
       if (!response.ok) {
@@ -119,6 +127,8 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
 
       const latency = Date.now() - startTime
 
+      console.log(`[LLM] Success - duration: ${latency}ms, tokens: ${apiResponse.usage.total_tokens}`)
+
       return {
         content: choice.message.content,
         tokensUsed: apiResponse.usage.total_tokens,
@@ -130,12 +140,15 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
 
       // Handle abort (timeout)
       if (error instanceof Error && error.name === 'AbortError') {
+        console.error(`[LLM] Timeout error after ${config.timeoutMs}ms`)
         throw new LLMError(
           LLMErrorCode.TIMEOUT,
           `Request timeout after ${config.timeoutMs}ms`,
           true
         )
       }
+      
+      console.error(`[LLM] Error:`, error)
 
       // Handle network errors
       if (error instanceof TypeError) {

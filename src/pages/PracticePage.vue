@@ -13,9 +13,19 @@
       </div>
     </header>
 
+    <!-- Practice Setup View -->
+    <PracticeSetup
+      v-if="practiceState === 'setup'"
+      :questions="questions"
+      :wordlist-name="wordlistName"
+      :estimated-time="estimatedTime"
+      @start="handleStart"
+      @back="handleBack"
+    />
+
     <!-- Practice Session View -->
     <PracticeSession
-      v-if="practiceState === 'active'"
+      v-else-if="practiceState === 'active'"
       :questions="questions"
       :current-question-index="currentQuestionIndex"
       :answers="answers"
@@ -60,8 +70,9 @@
       <ErrorDisplay
         title="Failed to Load Practice Session"
         :message="errorMessage"
+        :details="errorDetails"
         severity="error"
-        :retryable="true"
+        :retryable="isRetryable"
         :dismissible="false"
         @retry="handleRetry"
       />
@@ -89,11 +100,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { usePracticeSession } from '@/composables/usePracticeSession'
 import { generatePracticeQuestions } from '@/services/practiceQuestionService'
 import { useToast } from '@/composables/useToast'
+import PracticeSetup from '@/components/practice/PracticeSetup.vue'
 import PracticeSession from '@/components/practice/PracticeSession.vue'
 import ResultsView from '@/components/practice/ResultsView.vue'
 import ShareModal from '@/components/practice/ShareModal.vue'
 import ErrorDisplay from '@/components/practice/ErrorDisplay.vue'
-import type { QuestionType, Question, Answer } from '@/types/practice'
+import type { QuestionType, Question, Answer, PracticeSet, SessionResults } from '@/types/practice'
 
 const router = useRouter()
 const route = useRoute()
@@ -112,96 +124,158 @@ const timerDurationParam = computed(() => {
 })
 
 // State
-type PracticeState = 'loading' | 'active' | 'completed' | 'error'
+type PracticeState = 'loading' | 'setup' | 'active' | 'completed' | 'error'
 const practiceState = ref<PracticeState>('loading')
 const loadingMessage = ref('Generating practice questions...')
 const errorMessage = ref('')
+const errorDetails = ref('')
+const isRetryable = ref(true)
 const showShareModal = ref(false)
 const practiceSetId = ref<string>('')
 
-// Create a mock practice set for the composable
-const mockPracticeSet = ref({
-  id: '',
-  wordlistId: wordlistId.value || '',
-  questions: {
-    matching: [],
-    fillBlank: [],
-    multipleChoice: []
-  },
-  createdAt: new Date(),
-  isShared: false
+// Practice set and session composable - initialized after questions are generated
+const practiceSet = ref<PracticeSet | null>(null)
+const sessionComposable = ref<ReturnType<typeof usePracticeSession> | null>(null)
+
+// Session results for completed state
+const sessionResults = ref<SessionResults | null>(null)
+
+// Computed properties for template bindings
+const questions = computed(() => {
+  return sessionComposable.value?.allQuestions.value || []
 })
 
-// Practice session composable
-const {
-  sessionId,
-  currentQuestionIndex,
-  answers,
-  timeRemaining,
-  isPaused,
-  allQuestions: questions,
-  // Mock the missing properties for now
-} = usePracticeSession({
-  practiceSet: mockPracticeSet.value,
-  timerDuration: timerDurationParam.value
+const currentQuestionIndex = computed(() => {
+  return sessionComposable.value?.currentQuestionIndex.value || 0
 })
 
-// Mock the missing properties that PracticePage expects
-const timerDuration = computed(() => timerDurationParam.value)
-const score = ref(0)
-const timeTaken = ref(0)
-const startSession = (...args: any[]) => {}
-const answerQuestion = (...args: any[]) => {}
-const navigateToQuestion = (...args: any[]) => {}
-const submitSession = (...args: any[]) => {}
-const toggleSessionPause = () => {}
-const retrySession = () => {}
-const clearSession = () => {}
+const answers = computed(() => {
+  return sessionComposable.value?.answers.value || new Map()
+})
+
+const timeRemaining = computed(() => {
+  return sessionComposable.value?.timeRemaining.value || 0
+})
+
+const isPaused = computed(() => {
+  return sessionComposable.value?.isPaused.value || false
+})
+
+const sessionId = computed(() => {
+  return sessionComposable.value?.sessionId.value || ''
+})
+
+const score = computed(() => {
+  if (!sessionResults.value) return 0
+  return sessionResults.value.correctAnswers
+})
+
+const timeTaken = computed(() => {
+  if (!sessionResults.value) return 0
+  return sessionResults.value.duration
+})
+
+const timerDuration = computed(() => {
+  return timerDurationParam.value || 0
+})
 
 // Methods
 async function initializePractice() {
   if (!wordlistId.value) {
     errorMessage.value = 'No wordlist selected'
+    errorDetails.value = 'Please select a wordlist from the wordlists page to start practicing.'
+    isRetryable.value = false
     practiceState.value = 'error'
     return
   }
 
   try {
+    // Reset error state
+    errorMessage.value = ''
+    errorDetails.value = ''
+    isRetryable.value = true
+    
     practiceState.value = 'loading'
-    loadingMessage.value = 'Generating practice questions...'
+    loadingMessage.value = 'Preparing your practice session...'
 
-    // Generate questions
+    // 1. Generate questions first with progress updates
     const response = await generatePracticeQuestions(
       wordlistId.value,
       questionTypesParam.value as QuestionType[],
       10, // max questions per type
       (message) => {
+        // Update loading message with progress
         loadingMessage.value = message
       }
     )
 
-    if (!response.success || !response.questions || !response.practiceSetId) {
-      throw new Error(response.error?.message || 'Failed to generate questions')
+    // 2. Handle error response from API
+    if (!response.success) {
+      const errorCode = response.error?.code || 'UNKNOWN_ERROR'
+      const errorMsg = response.error?.message || 'Failed to generate questions'
+      
+      // Determine if error is retryable based on error code
+      isRetryable.value = isErrorRetryable(errorCode)
+      
+      // Set user-friendly error message
+      errorMessage.value = errorMsg
+      
+      // Add helpful details based on error type
+      if (errorCode === 'INSUFFICIENT_WORDS') {
+        errorDetails.value = 'Try adding more words to your wordlist before generating practice questions.'
+        isRetryable.value = false
+      } else if (errorCode === 'GENERATION_TIMEOUT') {
+        errorDetails.value = 'The AI took too long to generate questions. This usually resolves on retry.'
+      } else if (errorCode === 'NETWORK_ERROR' || errorCode === 'OFFLINE') {
+        errorDetails.value = 'Please check your internet connection and try again.'
+      } else if (errorCode === 'VALIDATION_ERROR') {
+        errorDetails.value = 'The generated questions did not meet quality standards. Please try again.'
+      }
+      
+      practiceState.value = 'error'
+      showToast('Failed to generate practice questions', 'error')
+      return
+    }
+
+    // 3. Validate response has required data
+    if (!response.questions || !response.practiceSetId) {
+      errorMessage.value = 'Invalid response from server'
+      errorDetails.value = 'The server returned an incomplete response. Please try again.'
+      isRetryable.value = true
+      practiceState.value = 'error'
+      showToast('Failed to generate practice questions', 'error')
+      return
     }
 
     // Store practice set ID for sharing
     practiceSetId.value = response.practiceSetId
 
-    // Flatten questions from all types
-    const allQuestions: Question[] = [
-      ...response.questions.matching,
-      ...response.questions.fillBlank,
-      ...response.questions.multipleChoice,
-    ]
+    // 4. Create complete PracticeSet object with generated questions
+    loadingMessage.value = 'Setting up your practice session...'
+    
+    practiceSet.value = {
+      id: response.practiceSetId,
+      wordlistId: wordlistId.value,
+      questions: response.questions,
+      createdAt: new Date(),
+      isShared: false
+    }
 
-    // Start practice session
-    startSession(
-      allQuestions,
-      wordlistId.value,
-      timerDurationParam.value
-    )
+    // 5. Initialize composable with complete data
+    sessionComposable.value = usePracticeSession({
+      practiceSet: practiceSet.value,
+      timerDuration: timerDurationParam.value,
+      onTimerExpire: handleTimerExpire,
+      onSessionComplete: handleSessionComplete
+    })
 
+    // 6. Start the practice session immediately (questions already generated)
     practiceState.value = 'active'
+    
+    // Start the timer if configured
+    if (sessionComposable.value && timerDurationParam.value) {
+      sessionComposable.value.startTimer()
+    }
 
     // Show cache notification if applicable
     if (response.metadata?.cached) {
@@ -209,25 +283,62 @@ async function initializePractice() {
     }
   } catch (error) {
     console.error('Failed to initialize practice:', error)
-    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred'
-    practiceState.value = 'error'
     
+    // Extract error information
+    const errorObj = error as any
+    const errorCode = errorObj?.code || 'UNKNOWN_ERROR'
+    
+    // Set retryable flag based on error type
+    isRetryable.value = isErrorRetryable(errorCode)
+    
+    // Set user-friendly error message
+    errorMessage.value = errorObj?.userMessage || errorObj?.message || 'An unexpected error occurred'
+    
+    // Add technical details for debugging
+    if (errorObj?.message && errorObj?.message !== errorMessage.value) {
+      errorDetails.value = `Technical details: ${errorObj.message}`
+    }
+    
+    practiceState.value = 'error'
     showToast('Failed to generate practice questions', 'error')
   }
 }
 
+/**
+ * Determine if an error code is retryable
+ */
+function isErrorRetryable(errorCode: string): boolean {
+  const retryableErrors = [
+    'GENERATION_FAILED',
+    'GENERATION_TIMEOUT',
+    'NETWORK_ERROR',
+    'OFFLINE',
+    'TIMEOUT',
+    'INTERNAL_ERROR',
+    'UNKNOWN_ERROR',
+  ]
+  
+  return retryableErrors.includes(errorCode)
+}
+
 function handleAnswer(payload: { questionId: string; answer: Answer }) {
-  answerQuestion(payload.questionId, payload.answer)
+  if (sessionComposable.value) {
+    sessionComposable.value.submitAnswer(payload.questionId, payload.answer)
+  }
 }
 
 function handleNavigate(index: number) {
-  navigateToQuestion(index)
+  if (sessionComposable.value) {
+    sessionComposable.value.goToQuestion(index)
+  }
 }
 
 async function handleSubmit() {
   try {
-    await submitSession()
-    practiceState.value = 'completed'
+    if (sessionComposable.value) {
+      sessionResults.value = sessionComposable.value.completeSession()
+      practiceState.value = 'completed'
+    }
   } catch (error) {
     console.error('Failed to submit session:', error)
     showToast('Failed to save session results', 'error')
@@ -235,20 +346,51 @@ async function handleSubmit() {
 }
 
 function togglePause() {
-  toggleSessionPause()
+  if (sessionComposable.value) {
+    if (sessionComposable.value.isPaused.value) {
+      sessionComposable.value.resumeTimer()
+    } else {
+      sessionComposable.value.pauseTimer()
+    }
+  }
+}
+
+function handleTimerExpire() {
+  showToast('Time is up!', 'warning')
+  handleSubmit()
+}
+
+function handleSessionComplete() {
+  // Called when session is completed
+  practiceState.value = 'completed'
 }
 
 function handleRetry() {
   if (practiceState.value === 'error') {
+    // Reset all state before retrying
+    errorMessage.value = ''
+    errorDetails.value = ''
+    isRetryable.value = true
+    practiceSet.value = null
+    sessionComposable.value = null
+    sessionResults.value = null
+    
+    // Reinitialize practice session
     initializePractice()
-  } else {
-    retrySession()
+  } else if (sessionComposable.value) {
+    // Retry from results view - reset the session
+    sessionComposable.value.resetSession()
     practiceState.value = 'active'
   }
 }
 
 function handleNewQuestions() {
-  clearSession()
+  // Clear current session and generate new questions
+  practiceSet.value = null
+  sessionComposable.value = null
+  sessionResults.value = null
+  
+  // Reinitialize with new questions
   initializePractice()
 }
 
@@ -264,6 +406,24 @@ function handleShareCreated(shareUrl: string) {
 function handleBack() {
   router.push('/wordlists')
 }
+
+function handleStart(config: { timerDuration?: number; questionTypes?: QuestionType[] }) {
+  // User clicked "Start Practice" from setup screen
+  // Transition from setup to active state
+  practiceState.value = 'active'
+  
+  // Start the timer if configured
+  if (sessionComposable.value && config.timerDuration) {
+    sessionComposable.value.startTimer()
+  }
+}
+
+const estimatedTime = computed(() => {
+  // Calculate estimated time based on number of questions
+  // Rough estimate: 30 seconds per question
+  const questionCount = questions.value.length
+  return Math.ceil(questionCount * 0.5) // minutes
+})
 
 // Lifecycle
 onMounted(() => {

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
+import { getSessionId, isHealthCheck, createUnauthorizedResponse, createHealthCheckResponse } from '../_shared/auth.ts';
 
 interface SharePracticeSetRequest {
   practiceSetId: string;
@@ -25,15 +26,19 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Handle health checks gracefully
+  if (isHealthCheck(req)) {
+    return createHealthCheckResponse();
+  }
+
   try {
-    // Get session ID from headers
-    const sessionId = req.headers.get('x-session-id');
-    if (!sessionId) {
-      return new Response(
-        JSON.stringify({ error: 'Session ID required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Get and validate session ID
+    const auth = getSessionId(req);
+    if (!auth.isValid || !auth.sessionId) {
+      return createUnauthorizedResponse(auth.error);
     }
+
+    const sessionId = auth.sessionId;
 
     // Parse request body
     const { practiceSetId }: SharePracticeSetRequest = await req.json();

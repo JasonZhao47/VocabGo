@@ -74,6 +74,7 @@
       <div 
         v-for="wordlist in filteredWordlists" 
         :key="wordlist.id"
+        :data-wordlist-id="wordlist.id"
         data-animate-child
         class="wordlist-card bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-250 ease-out"
       >
@@ -353,15 +354,26 @@ async function animateCards() {
   const cards = document.querySelectorAll('.wordlist-card')
   if (cards.length === 0) return
 
+  // Set initial state for animation - only for cards that haven't been animated
+  const cardsToAnimate = Array.from(cards).filter(card => {
+    const currentOpacity = gsap.getProperty(card, 'opacity')
+    return currentOpacity === 0 || currentOpacity === undefined
+  })
+
+  if (cardsToAnimate.length === 0) {
+    hasAnimated.value = true
+    return
+  }
+
   // Set initial state for animation
-  gsap.set(cards, {
+  gsap.set(cardsToAnimate, {
     opacity: 0,
     y: 20,
   })
 
   // Animate with stagger
   staggerAnimation(
-    Array.from(cards),
+    cardsToAnimate,
     {
       opacity: 1,
       y: 0,
@@ -413,18 +425,18 @@ watch(
       if (!hasAnimated.value) {
         // First load - animate all cards
         await animateCards()
-      } else if (newLength !== oldLength && newLength > oldLength) {
+      } else if (newLength > oldLength) {
         // List updated with MORE cards - animate new cards only
         await animateNewCards()
       }
+      // Don't animate when cards are removed (newLength < oldLength)
     }
   },
   { immediate: true }
 )
 
-// Reset animation flag when search changes (but only if it actually filters results)
+// Reset animation flag when search changes
 watch(searchQuery, (newQuery, oldQuery) => {
-  // Only reset animation if search actually changed and we have wordlists
   if (newQuery !== oldQuery && wordlists.value.length > 0) {
     hasAnimated.value = false
   }
@@ -573,13 +585,28 @@ function cancelDelete() {
 async function handleDelete() {
   if (!deleteTarget.value) return
 
-  deletingId.value = deleteTarget.value.id
-  const success = await removeWordlist(deleteTarget.value.id)
+  const targetId = deleteTarget.value.id
+  deletingId.value = targetId
+  
+  // Animate card out before removing
+  if (shouldAnimate.value) {
+    const card = document.querySelector(`[data-wordlist-id="${targetId}"]`)
+    if (card) {
+      await gsap.to(card, {
+        opacity: 0,
+        scale: 0.95,
+        duration: getDuration(animationConfig.duration.fast) / 1000,
+        ease: animationConfig.easing.easeIn,
+      })
+    }
+  }
+  
+  const success = await removeWordlist(targetId)
   deletingId.value = null
   
   if (success) {
     // Close expanded view if this wordlist was expanded
-    if (expandedWordlistId.value === deleteTarget.value.id) {
+    if (expandedWordlistId.value === targetId) {
       expandedWordlistId.value = null
     }
   }
@@ -824,9 +851,12 @@ async function handleGenerateQuestions(payload: { questionTypes: QuestionType[];
   transform: translateX(2px);
 }
 
-/* Ensure wordlist cards are visible by default */
-.wordlist-card {
-  opacity: 1;
+/* Ensure wordlist cards are visible by default (for reduced motion users) */
+@media (prefers-reduced-motion: reduce) {
+  .wordlist-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 </style>
 

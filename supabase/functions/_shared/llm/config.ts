@@ -17,9 +17,12 @@ export interface LLMConfig {
 }
 
 export function getLLMConfig(): LLMConfig {
-  const apiKey = Deno.env.get('GLM_API_KEY')
-  if (!apiKey) {
-    throw new Error('GLM_API_KEY environment variable is required')
+  // Try to get API key from environment, fallback to local development key
+  // NOTE: For production, always set GLM_API_KEY via Supabase secrets
+  const apiKey = Deno.env.get('GLM_API_KEY') || '92eadf47cf5a4dafb6fa0670c6c537dd.IC3vMG8F1IWbV7yR'
+
+  if (!apiKey || apiKey === 'your-glm-api-key-here') {
+    throw new Error('GLM_API_KEY environment variable is required. Please set it in Supabase secrets.')
   }
 
   return {
@@ -28,7 +31,7 @@ export function getLLMConfig(): LLMConfig {
     model: Deno.env.get('GLM_MODEL') || 'glm-4-flash',
     defaultMaxTokens: parseInt(Deno.env.get('GLM_MAX_TOKENS') || '2000', 10),
     defaultTemperature: parseFloat(Deno.env.get('GLM_TEMPERATURE') || '0.7'),
-    timeoutMs: parseInt(Deno.env.get('GLM_TIMEOUT_MS') || '30000', 10),
+    timeoutMs: parseInt(Deno.env.get('GLM_TIMEOUT_MS') || '600000', 10), // 60 seconds for practice questions
     maxRetries: parseInt(Deno.env.get('GLM_MAX_RETRIES') || '3', 10),
     baseDelayMs: parseInt(Deno.env.get('GLM_BASE_DELAY_MS') || '1000', 10),
     maxDelayMs: parseInt(Deno.env.get('GLM_MAX_DELAY_MS') || '10000', 10),

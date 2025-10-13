@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
+import { isHealthCheck, createHealthCheckResponse } from '../_shared/auth.ts';
 
 /**
  * Retrieve a shared practice set by its URL slug
@@ -9,6 +10,11 @@ Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Handle health checks gracefully
+  if (isHealthCheck(req)) {
+    return createHealthCheckResponse();
   }
 
   try {

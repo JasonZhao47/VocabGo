@@ -7,6 +7,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isHealthCheck, createHealthCheckResponse } from '../_shared/auth.ts'
 
 const CACHE_DURATION_HOURS = 24
 
@@ -20,6 +21,11 @@ serve(async (req) => {
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       },
     })
+  }
+
+  // Handle health checks gracefully
+  if (isHealthCheck(req)) {
+    return createHealthCheckResponse()
   }
 
   try {
