@@ -1,9 +1,10 @@
+/* Import gradient utilities */
+@import './gradients.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import gradient utilities */
-@import './gradients.css';
 
 /* ============================================
    S-TIER SAAS DASHBOARD - ELEVENLABS INSPIRED

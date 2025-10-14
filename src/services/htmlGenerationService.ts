@@ -164,21 +164,38 @@ export function generateStaticHtml(options: StaticHtmlOptions): string {
       border-radius: 8px;
       cursor: pointer;
       transition: all 150ms ease-out;
+      position: relative;
     }
 
-    .matching-item:hover {
+    .matching-item:hover:not(.matched) {
       border-color: #9ca3af;
+      background: #f9fafb;
+      transform: translateY(-1px);
     }
 
     .matching-item.selected {
       border-color: #000000;
       background: #f3f4f6;
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
     }
 
     .matching-item.matched {
       border-color: #10b981;
       background: #ecfdf5;
       cursor: default;
+      opacity: 0.7;
+    }
+
+    .matching-item.incorrect {
+      border-color: #ef4444;
+      background: #fef2f2;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
     }
 
     .btn {
@@ -321,6 +338,8 @@ export function generateStaticHtml(options: StaticHtmlOptions): string {
           englishItem.className = 'matching-item';
           englishItem.textContent = pair.english;
           englishItem.dataset.english = pair.english;
+          englishItem.dataset.questionIndex = index;
+          englishItem.onclick = () => selectMatchingItem(index, 'english', pair.english);
           englishDiv.appendChild(englishItem);
         });
 
@@ -329,8 +348,15 @@ export function generateStaticHtml(options: StaticHtmlOptions): string {
           mandarinItem.className = 'matching-item';
           mandarinItem.textContent = mandarin;
           mandarinItem.dataset.mandarin = mandarin;
+          mandarinItem.dataset.questionIndex = index;
+          mandarinItem.onclick = () => selectMatchingItem(index, 'mandarin', mandarin);
           mandarinDiv.appendChild(mandarinItem);
         });
+
+        // Initialize matching state
+        if (!answers[index]) {
+          answers[index] = { matches: [], selectedEnglish: null, selectedMandarin: null };
+        }
       }
     }
 
@@ -343,6 +369,117 @@ export function generateStaticHtml(options: StaticHtmlOptions): string {
           child.classList.add('selected');
         }
       });
+    }
+
+    function selectMatchingItem(questionIndex, side, value) {
+      const question = questions[questionIndex];
+      const state = answers[questionIndex];
+
+      // Check if already matched
+      const englishDiv = document.getElementById(\`english-\${questionIndex}\`);
+      const mandarinDiv = document.getElementById(\`mandarin-\${questionIndex}\`);
+      const allItems = [...englishDiv.children, ...mandarinDiv.children];
+      
+      const clickedItem = Array.from(allItems).find(item => 
+        (side === 'english' && item.dataset.english === value) ||
+        (side === 'mandarin' && item.dataset.mandarin === value)
+      );
+
+      if (clickedItem && clickedItem.classList.contains('matched')) {
+        return; // Already matched, ignore click
+      }
+
+      if (side === 'english') {
+        // Deselect previous English selection
+        if (state.selectedEnglish) {
+          const prevItem = Array.from(englishDiv.children).find(
+            item => item.dataset.english === state.selectedEnglish
+          );
+          if (prevItem) prevItem.classList.remove('selected');
+        }
+
+        // Select new English item
+        state.selectedEnglish = value;
+        clickedItem.classList.add('selected');
+
+        // Check if we have both selections
+        if (state.selectedMandarin) {
+          checkMatch(questionIndex);
+        }
+      } else {
+        // Deselect previous Mandarin selection
+        if (state.selectedMandarin) {
+          const prevItem = Array.from(mandarinDiv.children).find(
+            item => item.dataset.mandarin === state.selectedMandarin
+          );
+          if (prevItem) prevItem.classList.remove('selected');
+        }
+
+        // Select new Mandarin item
+        state.selectedMandarin = value;
+        clickedItem.classList.add('selected');
+
+        // Check if we have both selections
+        if (state.selectedEnglish) {
+          checkMatch(questionIndex);
+        }
+      }
+    }
+
+    function checkMatch(questionIndex) {
+      const question = questions[questionIndex];
+      const state = answers[questionIndex];
+      const englishDiv = document.getElementById(\`english-\${questionIndex}\`);
+      const mandarinDiv = document.getElementById(\`mandarin-\${questionIndex}\`);
+
+      // Find the correct pair
+      const correctPair = question.pairs.find(
+        pair => pair.english === state.selectedEnglish
+      );
+
+      const isCorrect = correctPair && correctPair.mandarin === state.selectedMandarin;
+
+      // Get the selected items
+      const englishItem = Array.from(englishDiv.children).find(
+        item => item.dataset.english === state.selectedEnglish
+      );
+      const mandarinItem = Array.from(mandarinDiv.children).find(
+        item => item.dataset.mandarin === state.selectedMandarin
+      );
+
+      if (isCorrect) {
+        // Correct match - mark as matched
+        if (englishItem && mandarinItem) {
+          englishItem.classList.remove('selected');
+          englishItem.classList.add('matched');
+          mandarinItem.classList.remove('selected');
+          mandarinItem.classList.add('matched');
+        }
+
+        // Store the match
+        state.matches.push({
+          english: state.selectedEnglish,
+          mandarin: state.selectedMandarin
+        });
+
+        // Clear selections
+        state.selectedEnglish = null;
+        state.selectedMandarin = null;
+      } else {
+        // Incorrect match - show error animation
+        if (englishItem && mandarinItem) {
+          englishItem.classList.add('incorrect');
+          mandarinItem.classList.add('incorrect');
+
+          // Remove error state after animation
+          setTimeout(() => {
+            englishItem.classList.remove('selected', 'incorrect');
+            mandarinItem.classList.remove('selected', 'incorrect');
+            state.selectedEnglish = null;
+            state.selectedMandarin = null;
+          }, 300);
+        }
+      }
     }
 
     function submitAnswers() {
@@ -366,6 +503,11 @@ export function generateStaticHtml(options: StaticHtmlOptions): string {
           }
         } else if (question.type === 'fill-blank') {
           if (answers[index] && answers[index].toLowerCase() === question.correctAnswer.toLowerCase()) {
+            correct++;
+          }
+        } else if (question.type === 'matching') {
+          const state = answers[index];
+          if (state && state.matches && state.matches.length === question.pairs.length) {
             correct++;
           }
         }

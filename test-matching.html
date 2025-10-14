@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Matching Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 28px;
+    }
+
+    .matching-pairs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .matching-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .matching-item {
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+      position: relative;
+    }
+
+    .matching-item:hover:not(.matched) {
+      border-color: #9ca3af;
+      background: #f9fafb;
+      transform: translateY(-1px);
+    }
+
+    .matching-item.selected {
+      border-color: #000000;
+      background: #f3f4f6;
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .matching-item.matched {
+      border-color: #10b981;
+      background: #ecfdf5;
+      cursor: default;
+      opacity: 0.7;
+    }
+
+    .matching-item.incorrect {
+      border-color: #ef4444;
+      background: #fef2f2;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    .btn {
+      margin-top: 24px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      background: #000000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: #1f2937;
+    }
+
+    .results {
+      text-align: center;
+      padding: 32px;
+      display: none;
+    }
+
+    .score {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Match English words with their Mandarin translations</h1>
+    
+    <div class="matching-pairs">
+      <div class="matching-column" id="english-column"></div>
+      <div class="matching-column" id="mandarin-column"></div>
+    </div>
+
+    <button class="btn" onclick="checkAnswers()">Submit Answers</button>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const pairs = [
+      { english: 'template', mandarin: '模板' },
+      { english: 'vocabulary', mandarin: '词库' },
+      { english: 'format', mandarin: '格式的' },
+      { english: 'upload', mandarin: '描述' },
+      { english: 'system', mandarin: '格式' }
+    ];
+
+    const shuffledMandarin = ['词库', '模板', '格式的', '描述', '格式'];
+
+    let state = {
+      matches: [],
+      selectedEnglish: null,
+      selectedMandarin: null
+    };
+
+    function init() {
+      const englishDiv = document.getElementById('english-column');
+      const mandarinDiv = document.getElementById('mandarin-column');
+
+      pairs.forEach(pair => {
+        const item = document.createElement('div');
+        item.className = 'matching-item';
+        item.textContent = pair.english;
+        item.dataset.english = pair.english;
+        item.onclick = () => selectItem('english', pair.english);
+        englishDiv.appendChild(item);
+      });
+
+      shuffledMandarin.forEach(mandarin => {
+        const item = document.createElement('div');
+        item.className = 'matching-item';
+        item.textContent = mandarin;
+        item.dataset.mandarin = mandarin;
+        item.onclick = () => selectItem('mandarin', mandarin);
+        mandarinDiv.appendChild(item);
+      });
+    }
+
+    function selectItem(side, value) {
+      const englishDiv = document.getElementById('english-column');
+      const mandarinDiv = document.getElementById('mandarin-column');
+      const allItems = [...englishDiv.children, ...mandarinDiv.children];
+      
+      const clickedItem = Array.from(allItems).find(item => 
+        (side === 'english' && item.dataset.english === value) ||
+        (side === 'mandarin' && item.dataset.mandarin === value)
+      );
+
+      if (clickedItem && clickedItem.classList.contains('matched')) {
+        return;
+      }
+
+      if (side === 'english') {
+        if (state.selectedEnglish) {
+          const prevItem = Array.from(englishDiv.children).find(
+            item => item.dataset.english === state.selectedEnglish
+          );
+          if (prevItem) prevItem.classList.remove('selected');
+        }
+
+        state.selectedEnglish = value;
+        clickedItem.classList.add('selected');
+
+        if (state.selectedMandarin) {
+          checkMatch();
+        }
+      } else {
+        if (state.selectedMandarin) {
+          const prevItem = Array.from(mandarinDiv.children).find(
+            item => item.dataset.mandarin === state.selectedMandarin
+          );
+          if (prevItem) prevItem.classList.remove('selected');
+        }
+
+        state.selectedMandarin = value;
+        clickedItem.classList.add('selected');
+
+        if (state.selectedEnglish) {
+          checkMatch();
+        }
+      }
+    }
+
+    function checkMatch() {
+      const englishDiv = document.getElementById('english-column');
+      const mandarinDiv = document.getElementById('mandarin-column');
+
+      const correctPair = pairs.find(
+        pair => pair.english === state.selectedEnglish
+      );
+
+      const isCorrect = correctPair && correctPair.mandarin === state.selectedMandarin;
+
+      const englishItem = Array.from(englishDiv.children).find(
+        item => item.dataset.english === state.selectedEnglish
+      );
+      const mandarinItem = Array.from(mandarinDiv.children).find(
+        item => item.dataset.mandarin === state.selectedMandarin
+      );
+
+      if (isCorrect) {
+        if (englishItem && mandarinItem) {
+          englishItem.classList.remove('selected');
+          englishItem.classList.add('matched');
+          mandarinItem.classList.remove('selected');
+          mandarinItem.classList.add('matched');
+        }
+
+        state.matches.push({
+          english: state.selectedEnglish,
+          mandarin: state.selectedMandarin
+        });
+
+        state.selectedEnglish = null;
+        state.selectedMandarin = null;
+      } else {
+        if (englishItem && mandarinItem) {
+          englishItem.classList.add('incorrect');
+          mandarinItem.classList.add('incorrect');
+
+          setTimeout(() => {
+            englishItem.classList.remove('selected', 'incorrect');
+            mandarinItem.classList.remove('selected', 'incorrect');
+            state.selectedEnglish = null;
+            state.selectedMandarin = null;
+          }, 300);
+        }
+      }
+    }
+
+    function checkAnswers() {
+      const resultsDiv = document.getElementById('results');
+      const score = Math.round((state.matches.length / pairs.length) * 100);
+      
+      resultsDiv.innerHTML = `
+        <div class="score">${score}%</div>
+        <p>You matched ${state.matches.length} out of ${pairs.length} pairs correctly</p>
+        <button class="btn" onclick="location.reload()">Try Again</button>
+      `;
+      resultsDiv.style.display = 'block';
+      document.querySelector('.matching-pairs').style.display = 'none';
+      document.querySelector('.btn').style.display = 'none';
+    }
+
+    init();
+  </script>
+</body>
+</html>
