@@ -425,7 +425,7 @@ watch(
       if (!hasAnimated.value) {
         // First load - animate all cards
         await animateCards()
-      } else if (newLength > oldLength) {
+      } else if (oldLength !== undefined && newLength > oldLength) {
         // List updated with MORE cards - animate new cards only
         await animateNewCards()
       }

@@ -224,6 +224,17 @@
         <span>Generate New Questions</span>
       </button>
 
+      <button @click="downloadHtml" class="btn-action btn-secondary" :disabled="isDownloading" data-testid="download-button">
+        <svg v-if="!isDownloading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>{{ isDownloading ? 'Generating...' : 'Download HTML' }}</span>
+      </button>
+
       <button @click="showShareModal = true" class="btn-action btn-secondary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -254,6 +265,8 @@ import { computed, ref } from 'vue'
 import type { SessionResults } from '@/types/practice'
 import type { Question, FillBlankAnswer, MultipleChoiceAnswer } from '@/types/practice'
 import ShareModal from './ShareModal.vue'
+import { PracticeHtmlGenerator } from '@/services/practiceHtmlGenerator'
+import { useToast } from '@/composables/useToast'
 
 // Props
 interface Props {
@@ -280,6 +293,10 @@ const emit = defineEmits<Emits>()
 
 // State
 const showShareModal = ref(false)
+const isDownloading = ref(false)
+
+// Composables
+const { showToast } = useToast()
 
 // Computed
 const scoreColorClass = computed(() => {
@@ -374,6 +391,49 @@ function handleShareCreated(shareUrl: string) {
 
 function handleShareDeleted() {
   emit('share-deleted')
+}
+
+async function downloadHtml() {
+  if (isDownloading.value) return
+  
+  try {
+    isDownloading.value = true
+    
+    // Generate HTML using the practice HTML generator
+    const htmlGenerator = new PracticeHtmlGenerator()
+    const result = htmlGenerator.generateHtml({
+      wordlistName: props.wordlistName,
+      questions: props.questions,
+      timestamp: new Date()
+    })
+    
+    // Create blob and download
+    const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    
+    // Create temporary download link
+    const downloadLink = document.createElement('a')
+    downloadLink.href = url
+    downloadLink.download = result.filename
+    downloadLink.style.display = 'none'
+    
+    // Trigger download
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+    
+    // Clean up object URL
+    URL.revokeObjectURL(url)
+    
+    // Show success message
+    showToast(`Practice questions saved as ${result.filename}`, 'success', 4000)
+    
+  } catch (error) {
+    console.error('Failed to download HTML:', error)
+    showToast('Unable to generate HTML file. Please try again.', 'error', 5000)
+  } finally {
+    isDownloading.value = false
+  }
 }
 </script>
 
@@ -806,6 +866,34 @@ function handleShareDeleted() {
 .btn-ghost:hover {
   color: #374151;
   background: #f9fafb;
+}
+
+/* Loading Animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Disabled Button State */
+.btn-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-action:disabled:hover {
+  background: inherit;
+  border-color: inherit;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Responsive */

@@ -13,14 +13,14 @@
       </div>
     </header>
 
-    <!-- Practice Setup View -->
+    <!-- Practice Setup View (currently unused - goes directly to active) -->
     <PracticeSetup
       v-if="practiceState === 'setup'"
-      :questions="questions"
+      :wordlist-id="wordlistId"
       :wordlist-name="wordlistName"
-      :estimated-time="estimatedTime"
-      @start="handleStart"
-      @back="handleBack"
+      :word-count="questions.length"
+      @generate="handleStart"
+      @cancel="handleBack"
     />
 
     <!-- Practice Session View -->
@@ -142,27 +142,27 @@ const sessionResults = ref<SessionResults | null>(null)
 
 // Computed properties for template bindings
 const questions = computed(() => {
-  return sessionComposable.value?.allQuestions.value || []
+  return sessionComposable.value?.allQuestions || []
 })
 
 const currentQuestionIndex = computed(() => {
-  return sessionComposable.value?.currentQuestionIndex.value || 0
+  return sessionComposable.value?.currentQuestionIndex || 0
 })
 
 const answers = computed(() => {
-  return sessionComposable.value?.answers.value || new Map()
+  return sessionComposable.value?.answers || new Map()
 })
 
 const timeRemaining = computed(() => {
-  return sessionComposable.value?.timeRemaining.value || 0
+  return sessionComposable.value?.timeRemaining || 0
 })
 
 const isPaused = computed(() => {
-  return sessionComposable.value?.isPaused.value || false
+  return sessionComposable.value?.isPaused || false
 })
 
 const sessionId = computed(() => {
-  return sessionComposable.value?.sessionId.value || ''
+  return sessionComposable.value?.sessionId || ''
 })
 
 const score = computed(() => {
@@ -347,7 +347,7 @@ async function handleSubmit() {
 
 function togglePause() {
   if (sessionComposable.value) {
-    if (sessionComposable.value.isPaused.value) {
+    if (sessionComposable.value.isPaused) {
       sessionComposable.value.resumeTimer()
     } else {
       sessionComposable.value.pauseTimer()
@@ -356,7 +356,7 @@ function togglePause() {
 }
 
 function handleTimerExpire() {
-  showToast('Time is up!', 'warning')
+  showToast('Time is up!', 'info')
   handleSubmit()
 }
 
