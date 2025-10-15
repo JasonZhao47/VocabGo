@@ -123,15 +123,16 @@
             
             <!-- Practice Button (Secondary) -->
             <button
-              @click.stop="startPractice(wordlist)"
-              :disabled="wordlist.wordCount < 4"
+              @click.stop="generateAndDownload(wordlist)"
+              :disabled="wordlist.wordCount < 4 || isGenerating"
               class="w-full h-10 px-4 text-[14px] font-semibold text-black bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              :title="wordlist.wordCount < 4 ? 'Minimum 4 words required' : 'Practice with questions'"
+              :title="wordlist.wordCount < 4 ? 'Minimum 4 words required for practice questions' : 'Generate and download practice questions as HTML file'"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span v-if="isGenerating" class="inline-block w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              Practice Questions
+              {{ isGenerating ? 'Generating...' : 'Practice Questions' }}
             </button>
             
             <!-- Secondary Actions Row -->
@@ -248,42 +249,20 @@
       </div>
     </div>
 
-    <!-- Practice Setup Modal -->
-    <div 
-      v-if="showPracticeSetup"
-      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-250 p-4"
-      @click.self="closePracticeSetup"
-    >
-      <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-250">
-        <PracticeSetup
-          v-if="practiceWordlist"
-          :wordlist-id="practiceWordlist.id"
-          :wordlist-name="practiceWordlist.filename"
-          :word-count="practiceWordlist.wordCount"
-          :is-generating="isGeneratingQuestions"
-          @generate="handleGenerateQuestions"
-          @cancel="closePracticeSetup"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useWordlist } from '@/composables/useWordlist'
+import { usePracticeQuestions } from '@/composables/usePracticeQuestions'
 import type { WordlistRecord } from '@/state/wordlistsState'
 import WordlistCardSkeleton from '@/components/ui/WordlistCardSkeleton.vue'
-import PracticeSetup from '@/components/practice/PracticeSetup.vue'
 import { staggerAnimation } from '@/utils/staggerAnimation'
 import { useMotionPreference } from '@/composables/useMotionPreference'
 import { animationConfig } from '@/config/animations'
 import { useToast } from '@/composables/useToast'
-import type { QuestionType } from '@/types/practice'
 import gsap from 'gsap'
-
-const router = useRouter()
 
 // Use the wordlist composable
 const {
@@ -296,6 +275,9 @@ const {
   removeWordlist,
   downloadWordlist,
 } = useWordlist()
+
+// Use practice questions composable
+const { isGenerating, generateAndDownload } = usePracticeQuestions()
 
 // Motion preference detection
 const { shouldAnimate, getDuration } = useMotionPreference()
@@ -311,11 +293,6 @@ const deleteTarget = ref<{ id: string; filename: string } | null>(null)
 const exportingId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 const hasAnimated = ref(false)
-
-// Practice state
-const showPracticeSetup = ref(false)
-const practiceWordlist = ref<WordlistRecord | null>(null)
-const isGeneratingQuestions = ref(false)
 
 // Filtered wordlists based on search query
 const filteredWordlists = computed(() => {
@@ -625,55 +602,7 @@ async function handleExport(wordlist: WordlistRecord) {
   exportingId.value = null
 }
 
-/**
- * Start practice session for a wordlist
- */
-function startPractice(wordlist: WordlistRecord) {
-  // Validate minimum word count
-  if (wordlist.wordCount < 4) {
-    showToast('This wordlist needs at least 4 words to generate practice questions.', 'error')
-    return
-  }
 
-  practiceWordlist.value = wordlist
-  showPracticeSetup.value = true
-}
-
-/**
- * Close practice setup modal
- */
-function closePracticeSetup() {
-  showPracticeSetup.value = false
-  practiceWordlist.value = null
-  isGeneratingQuestions.value = false
-}
-
-/**
- * Handle question generation
- */
-async function handleGenerateQuestions(payload: { questionTypes: QuestionType[]; timerDuration?: number }) {
-  if (!practiceWordlist.value) return
-
-  // Navigate to practice page with query params
-  const queryParams: Record<string, string> = {
-    wordlistId: practiceWordlist.value.id,
-    wordlistName: practiceWordlist.value.filename,
-    questionTypes: payload.questionTypes.join(','),
-  }
-
-  if (payload.timerDuration) {
-    queryParams.timerDuration = payload.timerDuration.toString()
-  }
-
-  // Close modal and navigate
-  closePracticeSetup()
-
-  // Use router to navigate
-  router.push({
-    path: '/practice',
-    query: queryParams,
-  })
-}
 </script>
 
 <style scoped>

@@ -34,8 +34,7 @@ const router = createRouter({
     },
     { 
       path: '/practice', 
-      name: 'practice', 
-      component: () => import('@/pages/PracticePage.vue')
+      redirect: '/wordlists'
     },
     { 
       path: '/toast-demo', 

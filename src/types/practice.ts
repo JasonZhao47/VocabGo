@@ -1,6 +1,6 @@
 /**
  * Practice Question Generator Types
- * Defines interfaces for question types, sessions, and practice management
+ * Defines interfaces for question types and question generation
  */
 
 // Question Type Enums
@@ -49,20 +49,11 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 // Union type for all question types
 export type Question = MatchingQuestion | FillBlankQuestion | MultipleChoiceQuestion;
 
-// Practice Set Structure
+// Practice Questions Structure
 export interface PracticeQuestions {
   matching: MatchingQuestion[];
   fillBlank: FillBlankQuestion[];
   multipleChoice: MultipleChoiceQuestion[];
-}
-
-export interface PracticeSet {
-  id: string;
-  wordlistId: string;
-  questions: PracticeQuestions;
-  createdAt: Date;
-  shareUrl?: string;
-  isShared: boolean;
 }
 
 // Answer Types
@@ -86,29 +77,6 @@ export interface MultipleChoiceAnswer {
 
 export type Answer = MatchingAnswer | FillBlankAnswer | MultipleChoiceAnswer;
 
-// Practice Session Management
-export interface PracticeSession {
-  id: string;
-  practiceSetId: string;
-  sessionId: string;
-  startTime: Date;
-  endTime?: Date;
-  timerDuration?: number; // in minutes
-  answers: Record<string, Answer>;
-  score?: number;
-  completed: boolean;
-  createdAt: Date;
-}
-
-// Session State (for composable)
-export interface SessionState {
-  currentSession: PracticeSession | null;
-  currentQuestionIndex: number;
-  timeRemaining: number; // in seconds
-  isPaused: boolean;
-  answers: Map<string, Answer>;
-}
-
 // Question Generation Request/Response
 export interface QuestionGenerationRequest {
   wordlistId: string;
@@ -120,50 +88,6 @@ export interface QuestionGenerationResponse {
   practiceSetId: string;
   questions: PracticeQuestions;
   estimatedTime: number; // in minutes
-}
-
-// Local Storage Schema
-export interface LocalPracticeState {
-  currentSession?: {
-    practiceSetId: string;
-    startTime: number;
-    timerDuration?: number;
-    answers: Record<string, Answer>;
-    currentQuestionIndex: number;
-  };
-  sessionHistory: Array<{
-    practiceSetId: string;
-    wordlistName: string;
-    score: number;
-    completedAt: number;
-    duration: number;
-  }>;
-}
-
-// Session Results
-export interface SessionResults {
-  sessionId: string;
-  totalQuestions: number;
-  correctAnswers: number;
-  score: number;
-  duration: number; // in seconds
-  breakdown: {
-    matching?: {
-      total: number;
-      correct: number;
-      score: number;
-    };
-    fillBlank?: {
-      total: number;
-      correct: number;
-      score: number;
-    };
-    multipleChoice?: {
-      total: number;
-      correct: number;
-      score: number;
-    };
-  };
 }
 
 // Error Types
@@ -178,31 +102,4 @@ export interface QuestionGenerationErrorResponse {
   error: QuestionGenerationError;
   message: string;
   retryable: boolean;
-}
-
-// Share Practice Set
-export interface SharePracticeSetRequest {
-  practiceSetId: string;
-}
-
-export interface SharePracticeSetResponse {
-  shareUrl: string;
-  htmlContent: string;
-}
-
-// Practice History
-export interface PracticeHistoryItem {
-  sessionId: string;
-  practiceSetId: string;
-  wordlistName: string;
-  score: number;
-  completedAt: Date;
-  duration: number;
-  questionTypes: QuestionType[];
-}
-
-export interface PracticeHistoryFilter {
-  questionType?: QuestionType;
-  startDate?: Date;
-  endDate?: Date;
 }
