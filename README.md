@@ -211,11 +211,24 @@ See [ARCHITECTURE_DECISION.md](.kiro/specs/ai-wordlist-extraction/ARCHITECTURE_D
 
 ## Documentation
 
+### Setup & Configuration
 - [ENV_SETUP.md](./ENV_SETUP.md) - Environment configuration guide
 - [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md) - Manual testing guide
+
+### Core Features
 - [Design Document](.kiro/specs/ai-wordlist-extraction/design.md) - Technical design
 - [Requirements](.kiro/specs/ai-wordlist-extraction/requirements.md) - Feature requirements
 - [Tasks](.kiro/specs/ai-wordlist-extraction/tasks-mvp.md) - Implementation tasks
+
+### UI Components & Design System
+- [Navigation Enhancement Guide](.kiro/specs/elevenlabs-navigation-list-enhancement/README.md) - Complete guide to modern UI components
+- [Component Examples](.kiro/specs/elevenlabs-navigation-list-enhancement/COMPONENT_EXAMPLES.md) - Code examples for all components
+- [Quick Reference](.kiro/specs/elevenlabs-navigation-list-enhancement/QUICK_REFERENCE.md) - Design tokens and component cheat sheet
+- [Migration Guide](.kiro/specs/elevenlabs-navigation-list-enhancement/MIGRATION_GUIDE.md) - Upgrade existing pages to new components
+- [Accessibility Audit](.kiro/specs/elevenlabs-navigation-list-enhancement/ACCESSIBILITY_AUDIT.md) - WCAG compliance details
+
+### Animation System
+- [Animation System Guide](./docs/ANIMATION_SYSTEM.md) - Comprehensive animation documentation
 
 ## Troubleshooting
 
