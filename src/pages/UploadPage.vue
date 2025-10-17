@@ -1,8 +1,5 @@
 <template>
   <div style="min-height: 100vh; background-color: #FFFFFF;">
-    <!-- Header -->
-    <Header />
-
     <!-- Main Content with Proper Padding -->
     <div style="max-width: 700px; margin: 0 auto; padding: 60px 24px 40px;">
       <!-- Page Header with Clean Typography -->
@@ -261,7 +258,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUpload } from '@/composables/useUpload'
 import { useLoadingAnimation } from '@/composables/useLoadingAnimation'
-import Header from '@/components/layout/Header.vue'
 
 const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
 const { isLoading: isButtonLoading, startLoading, stopLoading, animateSpinner } = useLoadingAnimation({

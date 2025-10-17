@@ -11,18 +11,29 @@
 
   <aside
     ref="sidebarRef"
+    id="main-sidebar"
     :class="[
       'sidebar',
       { 
-        'sidebar--collapsed': collapsed,
+        'sidebar--collapsed': isCollapsed,
         'sidebar--mobile': isMobile,
         'sidebar--mobile-open': isMobile && isOpen,
         'sidebar--mobile-closed': isMobile && !isOpen
       }
     ]"
-    :aria-label="collapsed ? 'Collapsed navigation' : 'Main navigation'"
+    :aria-label="isCollapsed ? 'Collapsed navigation' : 'Main navigation'"
     :aria-hidden="isMobile && !isOpen"
   >
+    <!-- Toggle button in sidebar header (desktop only) -->
+    <div v-if="!isMobile" class="sidebar__header">
+      <SidebarToggle
+        :collapsed="isCollapsed"
+        position="sidebar"
+        aria-controls="main-sidebar"
+        @toggle="handleToggle"
+      />
+    </div>
+
     <nav class="sidebar__nav" role="navigation">
       <ul class="sidebar__list" role="list">
         <template v-for="item in items" :key="item.id">
@@ -35,11 +46,27 @@
               :to="item.route"
               class="sidebar__link"
               :class="{ 'sidebar__link--active': isActive(item.route) }"
-              :aria-label="item.label"
+              :aria-label="isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined"
+              :title="isCollapsed ? item.label : undefined"
             >
-              <span class="sidebar__icon" v-html="item.icon"></span>
-              <span v-if="!collapsed" class="sidebar__label">{{ item.label }}</span>
-              <span v-if="item.badge && !collapsed" class="sidebar__badge">{{ item.badge }}</span>
+              <span class="sidebar__icon" v-html="item.icon" aria-hidden="true"></span>
+              <Transition name="label-fade" mode="out-in">
+                <span v-if="!isCollapsed" class="sidebar__label">{{ item.label }}</span>
+              </Transition>
+              <Transition name="label-fade" mode="out-in">
+                <span v-if="item.badge && !isCollapsed" class="sidebar__badge" :aria-label="`${item.badge} items`">{{ item.badge }}</span>
+              </Transition>
+              
+              <!-- Tooltip for collapsed state -->
+              <span
+                v-if="isCollapsed"
+                class="sidebar__tooltip"
+                role="tooltip"
+                aria-hidden="true"
+              >
+                {{ item.label }}
+                <span v-if="item.badge" class="sidebar__tooltip-badge">{{ item.badge }}</span>
+              </span>
             </router-link>
           </li>
 
@@ -50,27 +77,43 @@
           >
             <button
               class="sidebar__link sidebar__link--group"
-              :aria-expanded="expandedGroups.has(item.id)"
-              :aria-label="`${item.label} section`"
+              :aria-expanded="!isCollapsed && expandedGroups.has(item.id)"
+              :aria-label="isCollapsed ? item.label : `${item.label} section, ${expandedGroups.has(item.id) ? 'expanded' : 'collapsed'}`"
+              :title="isCollapsed ? item.label : undefined"
               @click="toggleGroup(item.id)"
             >
-              <span class="sidebar__icon" v-html="item.icon"></span>
-              <span v-if="!collapsed" class="sidebar__label">{{ item.label }}</span>
+              <span class="sidebar__icon" v-html="item.icon" aria-hidden="true"></span>
+              <Transition name="label-fade" mode="out-in">
+                <span v-if="!isCollapsed" class="sidebar__label">{{ item.label }}</span>
+              </Transition>
+              <Transition name="label-fade" mode="out-in">
+                <span
+                  v-if="!isCollapsed"
+                  class="sidebar__chevron"
+                  :class="{ 'sidebar__chevron--expanded': expandedGroups.has(item.id) }"
+                  aria-hidden="true"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </Transition>
+              
+              <!-- Tooltip for collapsed state -->
               <span
-                v-if="!collapsed"
-                class="sidebar__chevron"
-                :class="{ 'sidebar__chevron--expanded': expandedGroups.has(item.id) }"
+                v-if="isCollapsed"
+                class="sidebar__tooltip"
+                role="tooltip"
+                aria-hidden="true"
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                {{ item.label }}
               </span>
             </button>
 
             <!-- Collapsible children -->
             <Transition name="sidebar-expand">
               <ul
-                v-if="!collapsed && expandedGroups.has(item.id)"
+                v-if="!isCollapsed && expandedGroups.has(item.id)"
                 class="sidebar__sublist"
                 role="list"
               >
@@ -83,11 +126,15 @@
                   :to="child.route"
                   class="sidebar__link sidebar__link--child"
                   :class="{ 'sidebar__link--active': isActive(child.route) }"
-                  :aria-label="child.label"
+                  :aria-label="`${child.label}${child.badge ? ` (${child.badge})` : ''}`"
                 >
-                  <span class="sidebar__icon" v-html="child.icon"></span>
-                  <span class="sidebar__label">{{ child.label }}</span>
-                  <span v-if="child.badge" class="sidebar__badge">{{ child.badge }}</span>
+                  <span class="sidebar__icon" v-html="child.icon" aria-hidden="true"></span>
+                  <Transition name="label-fade" mode="out-in">
+                    <span class="sidebar__label">{{ child.label }}</span>
+                  </Transition>
+                  <Transition name="label-fade" mode="out-in">
+                    <span v-if="child.badge" class="sidebar__badge" :aria-label="`${child.badge} items`">{{ child.badge }}</span>
+                  </Transition>
                 </router-link>
               </li>
             </ul>
@@ -100,9 +147,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSwipeGesture } from '@/composables/useSwipeGesture'
+import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import SidebarToggle from './SidebarToggle.vue'
 
 /**
  * Navigation item interface
@@ -141,26 +190,48 @@ const route = useRoute()
 const sidebarRef = ref<HTMLElement | null>(null)
 
 /**
+ * Sidebar toggle state management
+ */
+const { 
+  collapsed: sidebarCollapsed, 
+  toggle: toggleSidebar, 
+  isDesktop, 
+  isMobile: isMobileViewport 
+} = useSidebarToggle()
+
+/**
+ * Use composable's mobile state directly
+ */
+const isMobile = computed(() => isMobileViewport.value)
+
+/**
+ * Computed collapsed state - use composable state on desktop, always false on mobile
+ */
+const isCollapsed = computed(() => {
+  // On mobile, always use expanded state (drawer behavior)
+  if (isMobile.value) return false
+  // On desktop, use composable state
+  return sidebarCollapsed.value
+})
+
+/**
+ * Handle toggle button click
+ */
+const handleToggle = () => {
+  if (!isMobile.value) {
+    toggleSidebar()
+  }
+}
+
+/**
  * Track which groups are expanded
  */
 const expandedGroups = ref<Set<string>>(new Set())
 
 /**
- * Mobile state management
+ * Mobile drawer state management
  */
-const isMobile = ref(false)
 const isOpen = ref(props.modelValue)
-
-/**
- * Check if viewport is mobile
- */
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768
-  // Auto-close sidebar when switching to mobile
-  if (isMobile.value && !props.modelValue) {
-    isOpen.value = false
-  }
-}
 
 /**
  * Close sidebar (mobile only)
@@ -223,6 +294,85 @@ const toggleGroup = (groupId: string): void => {
 const handleEscapeKey = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && isMobile.value && isOpen.value) {
     closeSidebar()
+    // Return focus to the element that opened the sidebar
+    if (lastFocusedElement) {
+      lastFocusedElement.focus()
+    }
+  }
+}
+
+/**
+ * Store the last focused element before opening mobile sidebar
+ */
+let lastFocusedElement: HTMLElement | null = null
+
+/**
+ * Focus management for mobile sidebar
+ */
+const manageFocus = () => {
+  if (!isMobile.value) return
+  
+  if (isOpen.value) {
+    // Store the currently focused element
+    lastFocusedElement = document.activeElement as HTMLElement
+    
+    // Focus the first focusable element in the sidebar
+    setTimeout(() => {
+      const firstLink = sidebarRef.value?.querySelector('.sidebar__link') as HTMLElement
+      firstLink?.focus()
+    }, 100)
+  } else {
+    // Return focus to the element that opened the sidebar
+    if (lastFocusedElement) {
+      lastFocusedElement.focus()
+      lastFocusedElement = null
+    }
+  }
+}
+
+/**
+ * Watch for viewport changes to handle state transitions
+ */
+watch(isMobile, (newIsMobile, oldIsMobile) => {
+  // When transitioning from desktop to mobile
+  if (newIsMobile && !oldIsMobile) {
+    // Close the drawer by default
+    isOpen.value = false
+    emit('update:modelValue', false)
+  }
+  // When transitioning from mobile to desktop
+  else if (!newIsMobile && oldIsMobile) {
+    // Ensure drawer is closed (desktop uses collapse/expand instead)
+    isOpen.value = false
+    emit('update:modelValue', false)
+  }
+})
+
+/**
+ * Handle Tab key for focus trap in mobile sidebar
+ */
+const handleTabKey = (event: KeyboardEvent) => {
+  if (!isMobile.value || !isOpen.value) return
+  if (event.key !== 'Tab') return
+  
+  const focusableElements = sidebarRef.value?.querySelectorAll(
+    'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )
+  
+  if (!focusableElements || focusableElements.length === 0) return
+  
+  const firstElement = focusableElements[0] as HTMLElement
+  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
+  
+  // If shift+tab on first element, focus last element
+  if (event.shiftKey && document.activeElement === firstElement) {
+    event.preventDefault()
+    lastElement.focus()
+  }
+  // If tab on last element, focus first element
+  else if (!event.shiftKey && document.activeElement === lastElement) {
+    event.preventDefault()
+    firstElement.focus()
   }
 }
 
@@ -230,25 +380,30 @@ const handleEscapeKey = (event: KeyboardEvent) => {
  * Lifecycle hooks
  */
 onMounted(() => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
   window.addEventListener('keydown', handleEscapeKey)
+  window.addEventListener('keydown', handleTabKey)
   
   // Sync with modelValue prop
   isOpen.value = props.modelValue
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('keydown', handleEscapeKey)
+  window.removeEventListener('keydown', handleTabKey)
 })
 
 /**
  * Watch for modelValue changes
  */
-import { watch } from 'vue'
 watch(() => props.modelValue, (newValue) => {
   isOpen.value = newValue
+})
+
+/**
+ * Watch for isOpen changes to manage focus
+ */
+watch(isOpen, () => {
+  manageFocus()
 })
 
 /**
@@ -263,22 +418,32 @@ defineExpose({
 </script>
 
 <style scoped>
+/* ElevenLabs-inspired sidebar styling */
 .sidebar {
   width: 260px;
   height: 100vh;
-  background: #FAFAFA;
-  border-right: 1px solid #F0F0F0;
+  background: #FFFFFF; /* White background per ElevenLabs design */
+  /* No border - the border will be on the main content area instead */
   transition: width 200ms ease-out;
   overflow-x: hidden;
   overflow-y: auto;
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 100;
+  z-index: 100; /* Above header to sit on top */
+  will-change: width; /* GPU acceleration hint */
+  transform: translateZ(0); /* Force GPU acceleration */
 }
 
 .sidebar--collapsed {
   width: 72px;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 0;
 }
 
 .sidebar__nav {
@@ -313,7 +478,7 @@ defineExpose({
   border-radius: 6px;
   transition: all 150ms ease-out;
   cursor: pointer;
-  border: none;
+  border: none; /* No borders on navigation links */
   background: transparent;
   width: 100%;
   text-align: left;
@@ -402,19 +567,9 @@ defineExpose({
   position: relative;
 }
 
-/* Separator between sections */
+/* Remove internal borders between navigation items per ElevenLabs design */
 .sidebar__item--group::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: 16px;
-  right: 16px;
-  height: 1px;
-  background: #E5E7EB;
-}
-
-.sidebar__item--group:first-child::before {
-  display: none;
+  display: none; /* No separator lines between sections */
 }
 
 /* Scrollbar styling */
@@ -433,6 +588,52 @@ defineExpose({
 
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #9CA3AF;
+}
+
+/* Tooltip for collapsed state */
+.sidebar__tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 12px;
+  background: #1F2937;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar__tooltip-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+/* Show tooltip on hover and focus */
+.sidebar--collapsed .sidebar__link:hover .sidebar__tooltip,
+.sidebar--collapsed .sidebar__link:focus-visible .sidebar__tooltip {
+  opacity: 1;
+}
+
+/* Tooltip arrow */
+.sidebar__tooltip::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #1F2937;
 }
 
 /* Focus styles for accessibility */
@@ -458,6 +659,22 @@ defineExpose({
 .sidebar-expand-leave-from {
   opacity: 1;
   max-height: 500px;
+}
+
+/* Label fade transition */
+.label-fade-enter-active,
+.label-fade-leave-active {
+  transition: opacity 150ms ease-out;
+}
+
+.label-fade-enter-from,
+.label-fade-leave-to {
+  opacity: 0;
+}
+
+.label-fade-enter-to,
+.label-fade-leave-from {
+  opacity: 1;
 }
 
 /* Mobile overlay */
@@ -491,6 +708,7 @@ defineExpose({
     transform: translateX(-100%);
     transition: transform 250ms ease-out;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    background: #FFFFFF; /* Ensure white background on mobile */
   }
 
   .sidebar--mobile-open {
@@ -526,6 +744,30 @@ defineExpose({
 
   .sidebar__overlay {
     display: none;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar__label,
+  .sidebar__badge,
+  .sidebar__chevron,
+  .sidebar__link {
+    transition: none;
+  }
+  
+  .sidebar-expand-enter-active,
+  .sidebar-expand-leave-active,
+  .label-fade-enter-active,
+  .label-fade-leave-active {
+    transition: none;
+  }
+  
+  /* Instant state changes without animation */
+  .label-fade-enter-from,
+  .label-fade-leave-to {
+    opacity: 1;
   }
 }
 </style>

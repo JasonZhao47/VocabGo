@@ -30,6 +30,7 @@
       :loading="isLoading"
       :error="hasError ? error : null"
       :on-row-click="handleRowClick"
+      :actions="[{}]"
     >
       <!-- Custom empty state -->
       <template #empty>
@@ -472,6 +473,7 @@ async function handleExport(wordlist: WordlistRecord) {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 16px;
+  background: #FFFFFF;
 }
 
 @media (min-width: 768px) {

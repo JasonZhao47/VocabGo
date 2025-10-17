@@ -16,7 +16,7 @@
       </div>
 
       <div class="control-group">
-        <SidebarToggle :is-open="mobileOpen" @toggle="mobileOpen = !mobileOpen" />
+        <SidebarToggle :collapsed="collapsed" @toggle="collapsed = !collapsed" />
       </div>
     </div>
 

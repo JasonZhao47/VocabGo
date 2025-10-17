@@ -12,15 +12,20 @@
       :items="navigationItems"
     />
     
-    <!-- Main layout with sidebar offset -->
+    <!-- Fixed top navbar -->
+    <Header
+      :sidebar-collapsed="sidebarCollapsed"
+      :page-title="currentPageTitle"
+      @toggle-mobile-menu="toggleMobileSidebar"
+      @toggle-sidebar="toggleDesktopSidebar"
+    >
+      <template #actions>
+        <!-- Future: Add action buttons like Feedback, Documentation -->
+      </template>
+    </Header>
+    
+    <!-- Main layout with sidebar and navbar offset -->
     <div :class="['app-layout', { 'app-layout--collapsed': sidebarCollapsed }]">
-      <!-- Header -->
-      <Header 
-        @toggle-mobile-menu="toggleMobileSidebar"
-        @toggle-sidebar="toggleDesktopSidebar"
-        :sidebar-collapsed="sidebarCollapsed"
-      />
-      
       <!-- Main content -->
       <main id="main-content" tabindex="-1" class="app-content focus:outline-none">
         <router-view v-slot="{ Component, route }">
@@ -43,8 +48,10 @@
 
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from 'vue'
+import { useRoute } from 'vue-router'
 import { usePageTransition } from '@/composables/usePageTransition'
 import { useNavigation } from '@/composables/useNavigation'
+import { useSidebarToggle } from '@/composables/useSidebarToggle'
 import { useWebVitals } from '@/composables/useWebVitals'
 import { usePerformanceMonitor } from '@/utils/performanceMonitor'
 
@@ -85,8 +92,26 @@ const { enter, leave } = usePageTransition({
 // Navigation state
 const { sidebarCollapsed, navigationItems, setNavigationItems, toggleSidebar } = useNavigation()
 
+// Get responsive state from sidebar toggle composable
+const { isMobile, isDesktop } = useSidebarToggle()
+
 // Mobile sidebar state
 const isMobileSidebarOpen = ref(false)
+
+// Current route for page title
+const route = useRoute()
+
+// Compute page title based on current route
+const currentPageTitle = computed(() => {
+  const titleMap: Record<string, string> = {
+    '/': 'Home',
+    '/upload': 'Upload Document',
+    '/processing': 'Processing',
+    '/result': 'Results',
+    '/wordlists': 'Saved Wordlists',
+  }
+  return titleMap[route.path] || 'VocabGo'
+})
 
 // Configure navigation items with proper icons
 const navItems = [
@@ -150,29 +175,71 @@ const onLeave = (el: Element, done: () => void) => {
   top: 0;
 }
 
-/* App layout with sidebar */
+/* Root app container with vertical divider line */
+#app {
+  position: relative;
+}
+
+/* Vertical divider line at sidebar edge - spans full height */
+#app::before {
+  content: '';
+  position: fixed;
+  left: 260px; /* Sidebar width */
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #E5E7EB;
+  z-index: 90; /* Below sidebar (100), above content */
+  transition: left 200ms ease-out;
+}
+
+/* Adjust divider position when sidebar is collapsed */
+#app:has(.app-layout--collapsed)::before {
+  left: 72px; /* Collapsed sidebar width */
+}
+
+/* App layout with sidebar and navbar offset */
 .app-layout {
-  margin-left: 260px;
-  min-height: 100vh;
+  margin-left: 260px; /* Expanded sidebar width */
+  margin-top: 64px; /* Fixed navbar height */
+  min-height: calc(100vh - 64px); /* Account for navbar */
   transition: margin-left 200ms ease-out;
 }
 
+/* Collapsed sidebar state */
 .app-layout--collapsed {
-  margin-left: 72px;
+  margin-left: 72px; /* Collapsed sidebar width */
 }
 
+/* Main content area */
 .app-content {
-  /* Content area styling */
+  /* White background to match sidebar */
+  background: #FFFFFF;
+  min-height: calc(100vh - 64px);
+  padding: 24px;
 }
 
-/* Mobile responsive - no sidebar offset */
+/* Mobile responsive - no sidebar offset, full width */
 @media (max-width: 767px) {
+  #app::before {
+    display: none; /* Hide divider on mobile */
+  }
+  
   .app-layout {
     margin-left: 0;
+    margin-top: 64px; /* Keep navbar offset on mobile */
   }
   
   .app-layout--collapsed {
     margin-left: 0;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .app-layout,
+  #app::before {
+    transition: none;
   }
 }
 </style>

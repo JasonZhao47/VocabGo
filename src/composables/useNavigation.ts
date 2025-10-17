@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useSidebarToggle } from './useSidebarToggle'
 
 export interface NavigationItem {
   id: string
@@ -8,6 +9,7 @@ export interface NavigationItem {
   route: string
   badge?: string | number
   children?: NavigationItem[]
+  tooltip?: string
 }
 
 interface NavigationState {
@@ -27,18 +29,21 @@ const defaultNavigationItems: NavigationItem[] = [
     label: 'Home',
     icon: 'home',
     route: '/',
+    tooltip: 'Go to Home',
   },
   {
     id: 'upload',
     label: 'Upload',
     icon: 'upload',
     route: '/upload',
+    tooltip: 'Upload Documents',
   },
   {
     id: 'saved-wordlists',
     label: 'Saved Wordlists',
     icon: 'bookmark',
     route: '/saved-wordlists',
+    tooltip: 'View Saved Wordlists',
   },
 ]
 
@@ -47,10 +52,14 @@ const navigationItems = ref<NavigationItem[]>(defaultNavigationItems)
 /**
  * Composable for managing navigation state
  * Provides sidebar collapsed state, active route tracking, and navigation items configuration
+ * Integrates with useSidebarToggle for state synchronization
  */
 export function useNavigation() {
   const route = useRoute()
   const router = useRouter()
+  
+  // Integrate with sidebar toggle state
+  const sidebarToggle = useSidebarToggle()
 
   // Initialize active route from current route
   if (!activeRoute.value && route.path) {
@@ -66,15 +75,34 @@ export function useNavigation() {
     },
     { immediate: true }
   )
+  
+  // Synchronize local sidebarCollapsed with useSidebarToggle state
+  watch(
+    () => sidebarToggle.collapsed.value,
+    (newCollapsed) => {
+      sidebarCollapsed.value = newCollapsed
+    },
+    { immediate: true }
+  )
 
   // Toggle sidebar collapsed state
   const toggleSidebar = () => {
-    sidebarCollapsed.value = !sidebarCollapsed.value
+    sidebarToggle.toggle()
   }
 
   // Set sidebar collapsed state explicitly
   const setSidebarCollapsed = (collapsed: boolean) => {
-    sidebarCollapsed.value = collapsed
+    sidebarToggle.setCollapsed(collapsed)
+  }
+  
+  // Expand sidebar programmatically
+  const expandSidebar = () => {
+    sidebarToggle.setCollapsed(false)
+  }
+  
+  // Collapse sidebar programmatically
+  const collapseSidebar = () => {
+    sidebarToggle.setCollapsed(true)
   }
 
   // Navigate to a route
@@ -178,6 +206,33 @@ export function useNavigation() {
     }
     updateInItems(navigationItems.value)
   }
+  
+  // Update navigation item tooltip
+  const updateNavigationTooltip = (itemId: string, tooltip?: string) => {
+    const updateInItems = (items: NavigationItem[]) => {
+      for (const item of items) {
+        if (item.id === itemId) {
+          item.tooltip = tooltip
+          return true
+        }
+        if (item.children && updateInItems(item.children)) {
+          return true
+        }
+      }
+      return false
+    }
+    updateInItems(navigationItems.value)
+  }
+  
+  // Get tooltip for navigation item (uses label as fallback)
+  const getNavigationTooltip = (item: NavigationItem): string => {
+    return item.tooltip || item.label
+  }
+  
+  // Check if tooltips should be shown (when sidebar is collapsed on desktop)
+  const shouldShowTooltips = computed(() => {
+    return sidebarToggle.collapsed.value && sidebarToggle.isDesktop.value
+  })
 
   return {
     // State
@@ -185,10 +240,15 @@ export function useNavigation() {
     activeRoute: computed(() => activeRoute.value),
     navigationItems: computed(() => navigationItems.value),
     activeNavigationItem,
+    isDesktop: sidebarToggle.isDesktop,
+    isMobile: sidebarToggle.isMobile,
+    shouldShowTooltips,
 
     // Actions
     toggleSidebar,
     setSidebarCollapsed,
+    expandSidebar,
+    collapseSidebar,
     navigateTo,
     isRouteActive,
     findNavigationItem,
@@ -196,5 +256,7 @@ export function useNavigation() {
     addNavigationItem,
     removeNavigationItem,
     updateNavigationBadge,
+    updateNavigationTooltip,
+    getNavigationTooltip,
   }
 }

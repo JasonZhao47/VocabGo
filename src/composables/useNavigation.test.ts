@@ -15,29 +15,56 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
+// Create shared mock state for useSidebarToggle
+const mockCollapsed = ref(false)
+const mockIsDesktop = ref(true)
+const mockIsMobile = ref(false)
+
+// Mock useSidebarToggle
+vi.mock('./useSidebarToggle', () => ({
+  useSidebarToggle: () => ({
+    collapsed: mockCollapsed,
+    isDesktop: mockIsDesktop,
+    isMobile: mockIsMobile,
+    toggle: () => {
+      mockCollapsed.value = !mockCollapsed.value
+    },
+    setCollapsed: (value: boolean) => {
+      mockCollapsed.value = value
+    },
+    announceStateChange: vi.fn(),
+  }),
+}))
+
 describe('useNavigation', () => {
   beforeEach(() => {
     // Reset state between tests
+    mockCollapsed.value = false
+    mockIsDesktop.value = true
+    mockIsMobile.value = false
+    
     const nav = useNavigation()
-    nav.setSidebarCollapsed(false)
     nav.setNavigationItems([
       {
         id: 'home',
         label: 'Home',
         icon: 'home',
         route: '/',
+        tooltip: 'Go to Home',
       },
       {
         id: 'upload',
         label: 'Upload',
         icon: 'upload',
         route: '/upload',
+        tooltip: 'Upload Documents',
       },
       {
         id: 'saved-wordlists',
         label: 'Saved Wordlists',
         icon: 'bookmark',
         route: '/saved-wordlists',
+        tooltip: 'View Saved Wordlists',
       },
     ])
   })
@@ -49,24 +76,50 @@ describe('useNavigation', () => {
     })
 
     it('should toggle sidebar collapsed state', () => {
-      const { sidebarCollapsed, toggleSidebar } = useNavigation()
-      expect(sidebarCollapsed.value).toBe(false)
+      const { toggleSidebar } = useNavigation()
+      expect(mockCollapsed.value).toBe(false)
       
       toggleSidebar()
-      expect(sidebarCollapsed.value).toBe(true)
+      expect(mockCollapsed.value).toBe(true)
       
       toggleSidebar()
-      expect(sidebarCollapsed.value).toBe(false)
+      expect(mockCollapsed.value).toBe(false)
     })
 
     it('should set sidebar collapsed state explicitly', () => {
-      const { sidebarCollapsed, setSidebarCollapsed } = useNavigation()
+      const { setSidebarCollapsed } = useNavigation()
       
       setSidebarCollapsed(true)
-      expect(sidebarCollapsed.value).toBe(true)
+      expect(mockCollapsed.value).toBe(true)
       
       setSidebarCollapsed(false)
-      expect(sidebarCollapsed.value).toBe(false)
+      expect(mockCollapsed.value).toBe(false)
+    })
+    
+    it('should expand sidebar programmatically', () => {
+      const { expandSidebar, setSidebarCollapsed } = useNavigation()
+      
+      setSidebarCollapsed(true)
+      expect(mockCollapsed.value).toBe(true)
+      
+      expandSidebar()
+      expect(mockCollapsed.value).toBe(false)
+    })
+    
+    it('should collapse sidebar programmatically', () => {
+      const { collapseSidebar } = useNavigation()
+      
+      expect(mockCollapsed.value).toBe(false)
+      
+      collapseSidebar()
+      expect(mockCollapsed.value).toBe(true)
+    })
+    
+    it('should expose desktop and mobile state', () => {
+      const { isDesktop, isMobile } = useNavigation()
+      
+      expect(isDesktop.value).toBe(true)
+      expect(isMobile.value).toBe(false)
     })
   })
 
@@ -156,6 +209,58 @@ describe('useNavigation', () => {
       
       updateNavigationBadge('home', undefined)
       expect(navigationItems.value[0].badge).toBeUndefined()
+    })
+    
+    it('should have default tooltips for navigation items', () => {
+      const { navigationItems } = useNavigation()
+      
+      expect(navigationItems.value[0].tooltip).toBe('Go to Home')
+      expect(navigationItems.value[1].tooltip).toBe('Upload Documents')
+      expect(navigationItems.value[2].tooltip).toBe('View Saved Wordlists')
+    })
+    
+    it('should update navigation tooltip', () => {
+      const { navigationItems, updateNavigationTooltip } = useNavigation()
+      
+      updateNavigationTooltip('home', 'Custom Home Tooltip')
+      expect(navigationItems.value[0].tooltip).toBe('Custom Home Tooltip')
+      
+      updateNavigationTooltip('home', undefined)
+      expect(navigationItems.value[0].tooltip).toBeUndefined()
+    })
+    
+    it('should get navigation tooltip with fallback to label', () => {
+      const { getNavigationTooltip, setNavigationItems } = useNavigation()
+      
+      const itemWithTooltip: NavigationItem = {
+        id: 'test1',
+        label: 'Test 1',
+        icon: 'test',
+        route: '/test1',
+        tooltip: 'Custom Tooltip',
+      }
+      
+      const itemWithoutTooltip: NavigationItem = {
+        id: 'test2',
+        label: 'Test 2',
+        icon: 'test',
+        route: '/test2',
+      }
+      
+      expect(getNavigationTooltip(itemWithTooltip)).toBe('Custom Tooltip')
+      expect(getNavigationTooltip(itemWithoutTooltip)).toBe('Test 2')
+    })
+    
+    it('should determine when to show tooltips based on collapsed state and desktop view', () => {
+      const { shouldShowTooltips, setSidebarCollapsed } = useNavigation()
+      
+      // Desktop + expanded = no tooltips
+      setSidebarCollapsed(false)
+      expect(shouldShowTooltips.value).toBe(false)
+      
+      // Desktop + collapsed = show tooltips
+      setSidebarCollapsed(true)
+      expect(shouldShowTooltips.value).toBe(true)
     })
   })
 
