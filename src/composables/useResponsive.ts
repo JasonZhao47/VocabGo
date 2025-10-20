@@ -25,7 +25,7 @@ const defaultBreakpoints: Breakpoints = {
 
 export function useResponsive(customBreakpoints?: Partial<Breakpoints>) {
   const breakpoints = { ...defaultBreakpoints, ...customBreakpoints };
-  
+
   const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 0);
   const windowHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 0);
 
@@ -140,12 +140,12 @@ export function useResponsive(customBreakpoints?: Partial<Breakpoints>) {
  */
 export function getMobileFontSize(baseFontSize: number): number {
   const viewport = window.innerWidth;
-  
+
   // Prevent zoom on iOS by using minimum 16px for inputs
   if (viewport < 640) {
     return Math.max(baseFontSize, 16);
   }
-  
+
   return baseFontSize;
 }
 
@@ -154,11 +154,11 @@ export function getMobileFontSize(baseFontSize: number): number {
  */
 export function getMobileSpacing(baseSpacing: number): number {
   const viewport = window.innerWidth;
-  
+
   if (viewport < 640) {
     return baseSpacing * 0.75; // Reduce spacing on mobile
   }
-  
+
   return baseSpacing;
 }
 
@@ -186,7 +186,7 @@ export function getSafeAreaInsets(): {
   left: number;
 } {
   const style = getComputedStyle(document.documentElement);
-  
+
   return {
     top: parseInt(style.getPropertyValue('--sat') || '0'),
     right: parseInt(style.getPropertyValue('--sar') || '0'),

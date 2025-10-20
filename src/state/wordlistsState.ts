@@ -8,6 +8,9 @@ export interface WordlistRecord {
   words: WordPair[]
   documentType: string
   wordCount: number
+  is_shared?: boolean
+  share_token?: string
+  shared_at?: Date
 }
 
 export interface WordlistsState {

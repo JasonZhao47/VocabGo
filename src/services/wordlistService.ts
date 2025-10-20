@@ -41,6 +41,9 @@ export interface WordlistRecord {
   wordCount: number
   words: WordPair[]
   createdAt: string
+  is_shared?: boolean
+  share_token?: string
+  shared_at?: string
 }
 
 /**

@@ -43,10 +43,11 @@ export function useWordlist() {
       setLoading(true)
       const lists = await fetchWordlists()
       
-      // Convert createdAt strings to Date objects
+      // Convert createdAt and shared_at strings to Date objects
       const wordlistsWithDates = lists.map(list => ({
         ...list,
         createdAt: new Date(list.createdAt),
+        shared_at: list.shared_at ? new Date(list.shared_at) : undefined,
       }))
       
       setWordlists(wordlistsWithDates)
@@ -116,7 +117,8 @@ export function useWordlist() {
       // Convert Date to string for service compatibility
       const wordlistForExport: import('@/services/wordlistService').WordlistRecord = {
         ...wordlist,
-        createdAt: wordlist.createdAt.toISOString()
+        createdAt: wordlist.createdAt.toISOString(),
+        shared_at: wordlist.shared_at?.toISOString(),
       }
       
       const blob = await exportWordlist(wordlistForExport)

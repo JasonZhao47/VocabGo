@@ -30,7 +30,6 @@
       :loading="isLoading"
       :error="hasError ? error : null"
       :on-row-click="handleRowClick"
-      :actions="[{}]"
     >
       <!-- Custom empty state -->
       <template #empty>
@@ -102,30 +101,45 @@
         v-if="expandedWordlist"
         class="wordlist-expanded"
       >
-        <h4 class="expanded-title">Word Pairs</h4>
-        <div class="expanded-table-container">
-          <table class="expanded-table">
-            <thead>
-              <tr class="expanded-table-header">
-                <th scope="col" class="expanded-table-header-cell">
-                  English
-                </th>
-                <th scope="col" class="expanded-table-header-cell">
-                  Mandarin
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(pair, index) in expandedWordlist.words" :key="index" class="expanded-table-row">
-                <td class="expanded-table-cell">
-                  {{ pair.en }}
-                </td>
-                <td class="expanded-table-cell">
-                  {{ pair.zh }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Sharing Section -->
+        <div class="expanded-section">
+          <h4 class="expanded-title">Share with Students</h4>
+          <ShareWordlistButton
+            :wordlist-id="expandedWordlist.id"
+            :initial-share-token="expandedWordlist.share_token"
+            :initial-is-shared="expandedWordlist.is_shared || false"
+            @share-enabled="handleShareEnabled(expandedWordlist.id, $event)"
+            @share-disabled="handleShareDisabled(expandedWordlist.id)"
+          />
+        </div>
+
+        <!-- Word Pairs Section -->
+        <div class="expanded-section">
+          <h4 class="expanded-title">Word Pairs</h4>
+          <div class="expanded-table-container">
+            <table class="expanded-table">
+              <thead>
+                <tr class="expanded-table-header">
+                  <th scope="col" class="expanded-table-header-cell">
+                    English
+                  </th>
+                  <th scope="col" class="expanded-table-header-cell">
+                    Mandarin
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(pair, index) in expandedWordlist.words" :key="index" class="expanded-table-row">
+                  <td class="expanded-table-cell">
+                    {{ pair.en }}
+                  </td>
+                  <td class="expanded-table-cell">
+                    {{ pair.zh }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </Transition>
@@ -189,6 +203,7 @@ import gsap from 'gsap'
 // Lazy load heavy UI components for better performance
 const DataTable = defineAsyncComponent(() => import('@/components/ui/DataTable.vue'))
 const ActionButton = defineAsyncComponent(() => import('@/components/ui/ActionButton.vue'))
+const ShareWordlistButton = defineAsyncComponent(() => import('@/components/sharing/ShareWordlistButton.vue'))
 
 // Use the wordlist composable
 const {
@@ -241,21 +256,53 @@ const tableColumns = computed(() => [
     key: 'filename',
     label: 'Filename',
     align: 'left' as const,
-    width: '40%',
+    width: '35%',
   },
   {
     key: 'createdAt',
     label: 'Date',
     align: 'left' as const,
-    width: '25%',
+    width: '20%',
     render: (value: Date) => h('span', { class: 'table-date' }, formatDate(value)),
   },
   {
     key: 'wordCount',
     label: 'Word Count',
     align: 'center' as const,
-    width: '20%',
+    width: '15%',
     render: (value: number) => h('span', { class: 'table-word-count' }, `${value} words`),
+  },
+  {
+    key: 'is_shared',
+    label: 'Status',
+    align: 'center' as const,
+    width: '15%',
+    render: (value: boolean) => {
+      if (value) {
+        return h('span', { 
+          class: 'share-status-badge share-status-active',
+          title: 'This wordlist is shared with students'
+        }, [
+          h('svg', {
+            class: 'w-3 h-3',
+            fill: 'none',
+            stroke: 'currentColor',
+            viewBox: '0 0 24 24'
+          }, [
+            h('path', {
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round',
+              'stroke-width': '2',
+              d: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z'
+            })
+          ]),
+          'Shared'
+        ])
+      }
+      return h('span', { 
+        class: 'share-status-badge share-status-inactive'
+      }, 'Not Shared')
+    },
   },
 ])
 
@@ -460,6 +507,30 @@ async function handleExport(wordlist: WordlistRecord) {
   exportingId.value = wordlist.id
   await downloadWordlist(wordlist)
   exportingId.value = null
+}
+
+/**
+ * Handle share enabled event
+ */
+function handleShareEnabled(wordlistId: string, shareToken: string) {
+  // Update the wordlist in the state to reflect the new share status
+  const wordlist = wordlists.value.find(w => w.id === wordlistId)
+  if (wordlist) {
+    wordlist.is_shared = true
+    wordlist.share_token = shareToken
+  }
+}
+
+/**
+ * Handle share disabled event
+ */
+function handleShareDisabled(wordlistId: string) {
+  // Update the wordlist in the state to reflect the disabled share status
+  const wordlist = wordlists.value.find(w => w.id === wordlistId)
+  if (wordlist) {
+    wordlist.is_shared = false
+    wordlist.share_token = undefined
+  }
 }
 
 
@@ -674,6 +745,29 @@ async function handleExport(wordlist: WordlistRecord) {
   border-radius: 9999px;
 }
 
+/* Share Status Badge */
+:deep(.share-status-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 150ms ease-out;
+}
+
+:deep(.share-status-active) {
+  color: #ffffff;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+}
+
+:deep(.share-status-inactive) {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
 /* Expanded Wordlist View */
 .wordlist-expanded {
   margin-top: 24px;
@@ -682,6 +776,14 @@ async function handleExport(wordlist: WordlistRecord) {
   border: 1px solid #f0f0f0;
   border-radius: 12px;
   overflow: hidden;
+}
+
+.expanded-section {
+  margin-bottom: 32px;
+}
+
+.expanded-section:last-child {
+  margin-bottom: 0;
 }
 
 .expanded-title {

@@ -344,6 +344,67 @@ export class PracticeHtmlGenerator {
     let score = 0;
     let startTime = Date.now();
     let timerInterval;
+    let wordlistId = null;
+
+    // Get wordlist ID from URL or localStorage
+    function getWordlistId() {
+      if (wordlistId) return wordlistId;
+      
+      // Try to get from localStorage (set by practice view)
+      const stored = localStorage.getItem('current_practice_wordlist_id');
+      if (stored) {
+        wordlistId = stored;
+        return wordlistId;
+      }
+      
+      return null;
+    }
+
+    // Record mistake function (fire and forget)
+    async function recordMistake(word, translation, questionType) {
+      const wlId = getWordlistId();
+      if (!wlId) {
+        console.warn('No wordlist ID available for mistake recording');
+        return;
+      }
+
+      // Check if recordPracticeMistake is available (from main app)
+      if (typeof window.recordPracticeMistake === 'function') {
+        try {
+          await window.recordPracticeMistake(wlId, word, translation, questionType);
+        } catch (error) {
+          console.error('Error recording mistake:', error);
+        }
+      } else {
+        // Fallback: direct API call
+        const sessionToken = localStorage.getItem('student_session_token');
+        if (!sessionToken) return;
+
+        try {
+          const SUPABASE_URL = localStorage.getItem('supabase_url') || '';
+          const SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || '';
+          
+          if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+
+          fetch(\`\${SUPABASE_URL}/functions/v1/record-practice-mistake\`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': \`Bearer \${SUPABASE_ANON_KEY}\`,
+            },
+            body: JSON.stringify({
+              sessionToken,
+              wordlistId: wlId,
+              word,
+              translation,
+              questionType,
+            }),
+          }).catch(err => console.warn('Failed to record mistake:', err));
+        } catch (error) {
+          console.warn('Error in fallback mistake recording:', error);
+        }
+      }
+    }
 
     function startTimer() {
       if (!${includeTimer}) return;
@@ -553,10 +614,15 @@ export class PracticeHtmlGenerator {
         state.selectedEnglish = null;
         state.selectedMandarin = null;
       } else {
-        // Incorrect match - show error animation
+        // Incorrect match - show error animation and record mistake
         if (englishItem && mandarinItem) {
           englishItem.classList.add('incorrect');
           mandarinItem.classList.add('incorrect');
+
+          // Record the mistake (fire and forget)
+          if (correctPair) {
+            recordMistake(state.selectedEnglish, correctPair.mandarin, 'matching');
+          }
 
           // Remove error state after animation
           setTimeout(() => {
@@ -584,22 +650,45 @@ export class PracticeHtmlGenerator {
         }
       });
 
-      // Calculate score
+      // Calculate score and record mistakes
       let correct = 0;
       questions.forEach((question, index) => {
         if (question.type === 'multiple-choice') {
           const correctOption = question.options.find(opt => opt.isCorrect);
           if (answers[index] === correctOption.text) {
             correct++;
+          } else {
+            // Record mistake for multiple-choice
+            // Extract word and translation from the question
+            const sentenceParts = question.sentence.match(/["'](.+?)["']/);
+            const word = sentenceParts ? sentenceParts[1] : question.sentence.split(' ')[0];
+            const translation = correctOption.text;
+            recordMistake(word, translation, 'multiple_choice');
           }
         } else if (question.type === 'fill-blank') {
           if (answers[index] && answers[index].toLowerCase() === question.correctAnswer.toLowerCase()) {
             correct++;
+          } else {
+            // Record mistake for fill-blank
+            const word = question.correctAnswer;
+            // Try to extract translation from sentence context
+            const translation = question.sentence.includes('(') 
+              ? question.sentence.match(/\\((.+?)\\)/)?.[1] || word
+              : word;
+            recordMistake(word, translation, 'fill_blank');
           }
         } else if (question.type === 'matching') {
           const state = answers[index];
           if (state && state.matches && state.matches.length === question.pairs.length) {
             correct++;
+          } else {
+            // Record mistakes for unmatched pairs in matching
+            const matchedEnglish = new Set(state?.matches?.map(m => m.english) || []);
+            question.pairs.forEach(pair => {
+              if (!matchedEnglish.has(pair.english)) {
+                recordMistake(pair.english, pair.mandarin, 'matching');
+              }
+            });
           }
         }
       });

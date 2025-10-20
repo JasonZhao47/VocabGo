@@ -15,6 +15,9 @@ interface WordlistRecord {
   wordCount: number
   words: Array<{ en: string; zh: string }>
   createdAt: string
+  is_shared?: boolean
+  share_token?: string
+  shared_at?: string
 }
 
 interface FetchResponse {
@@ -62,7 +65,7 @@ serve(async (req) => {
     // Fetch wordlists from database
     const { data, error } = await supabaseClient
       .from('wordlists')
-      .select('id, filename, document_type, word_count, words, created_at')
+      .select('id, filename, document_type, word_count, words, created_at, is_shared, share_token, shared_at')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: false })
 
@@ -91,6 +94,9 @@ serve(async (req) => {
       wordCount: row.word_count,
       words: row.words,
       createdAt: row.created_at,
+      is_shared: row.is_shared || false,
+      share_token: row.share_token || undefined,
+      shared_at: row.shared_at || undefined,
     }))
 
     console.log(`Fetched ${wordlists.length} wordlists for session ${sessionId}`)
