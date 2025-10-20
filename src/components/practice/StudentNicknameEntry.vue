@@ -60,7 +60,7 @@
       <!-- Privacy note -->
       <div class="privacy-note" data-animate-child>
         <svg 
-          class="w-4 h-4 text-gray-400 flex-shrink-0" 
+          class="privacy-icon" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -293,6 +293,14 @@ defineExpose({
 
 .privacy-note {
   @apply flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100;
+}
+
+.privacy-icon {
+  @apply w-4 h-4 text-gray-400 flex-shrink-0;
+  min-width: 1rem;
+  min-height: 1rem;
+  max-width: 1rem;
+  max-height: 1rem;
 }
 
 /* Enhanced animations for modal content */

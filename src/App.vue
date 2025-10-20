@@ -5,15 +5,17 @@
       Skip to main content
     </a>
     
-    <!-- Sidebar navigation -->
+    <!-- Sidebar navigation (hidden for student view) -->
     <Sidebar
+      v-if="!isStudentView"
       v-model="isMobileSidebarOpen"
       :collapsed="sidebarCollapsed"
       :items="navigationItems"
     />
     
-    <!-- Fixed top navbar -->
+    <!-- Fixed top navbar (hidden for student view) -->
     <Header
+      v-if="!isStudentView"
       :sidebar-collapsed="sidebarCollapsed"
       :page-title="currentPageTitle"
       @toggle-mobile-menu="toggleMobileSidebar"
@@ -25,7 +27,7 @@
     </Header>
     
     <!-- Main layout with sidebar and navbar offset -->
-    <div :class="['app-layout', { 'app-layout--collapsed': sidebarCollapsed }]">
+    <div :class="['app-layout', { 'app-layout--collapsed': sidebarCollapsed, 'app-layout--fullscreen': isStudentView }]">
       <!-- Main content -->
       <main id="main-content" tabindex="-1" class="app-content focus:outline-none">
         <router-view v-slot="{ Component, route }">
@@ -100,6 +102,11 @@ const isMobileSidebarOpen = ref(false)
 
 // Current route for page title
 const route = useRoute()
+
+// Check if current route is student practice view (no sidebar/header needed)
+const isStudentView = computed(() => {
+  return route.path.startsWith('/practice/')
+})
 
 // Compute page title based on current route
 const currentPageTitle = computed(() => {
@@ -209,6 +216,13 @@ const onLeave = (el: Element, done: () => void) => {
 /* Collapsed sidebar state */
 .app-layout--collapsed {
   margin-left: 72px; /* Collapsed sidebar width */
+}
+
+/* Fullscreen state for student view (no sidebar/header) */
+.app-layout--fullscreen {
+  margin-left: 0;
+  margin-top: 0;
+  min-height: 100vh;
 }
 
 /* Main content area */

@@ -10,14 +10,14 @@
       <div
         v-if="modelValue"
         ref="modalRef"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="modal-overlay"
         @click="handleBackdropClick"
         @keydown.esc="handleEscape"
       >
         <!-- Backdrop -->
         <div
           ref="backdropRef"
-          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          class="modal-backdrop"
           aria-hidden="true"
         />
 
@@ -128,15 +128,7 @@ const descriptionId = computed(() => `modal-description-${Math.random().toString
 
 const modalClasses = computed(() => {
   const baseClasses = [
-    'relative',
-    'bg-white',
-    'rounded-2xl',
-    'shadow-xl',
-    'max-h-[90vh]',
-    'overflow-hidden',
-    'flex',
-    'flex-col',
-    'theme-transition'
+    'modal-card'
   ]
 
   const sizeClasses = {
@@ -275,12 +267,54 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Modal overlay - full screen container */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Modal backdrop - dark overlay */
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+/* Modal card - the white content box */
+.modal-card {
+  position: relative;
+  z-index: 10;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 32rem; /* 512px */
+  padding: 1.5rem; /* Add padding to the card itself */
+}
+
 .modal-header {
   @apply px-6 py-4 border-b border-gray-100 flex-shrink-0;
 }
 
 .modal-content {
-  @apply px-6 py-4 flex-1 overflow-y-auto;
+  @apply flex-1;
+  /* Remove padding since card has padding now */
 }
 
 .modal-footer {
