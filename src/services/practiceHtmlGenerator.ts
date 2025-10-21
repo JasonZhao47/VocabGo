@@ -465,8 +465,18 @@ export class PracticeHtmlGenerator {
           optionsDiv.appendChild(optionDiv);
         });
       } else if (question.type === 'fill-blank') {
+        // Create hint: first letter + spaced underscores for remaining letters
+        const answer = question.correctAnswer;
+        const firstLetter = answer.charAt(0);
+        const remainingLength = Math.max(0, answer.length - 1);
+        const underscores = Array(remainingLength).fill('_').join(' ');
+        const hint = remainingLength > 0 ? firstLetter + ' ' + underscores : firstLetter;
+        
+        // Replace ___ in sentence with the hint
+        const sentenceWithHint = question.sentence.replace(/___/g, hint);
+        
         contentDiv.innerHTML = \`
-          <p style="margin-bottom: 16px;">\${escapeHtml(question.sentence)}</p>
+          <p style="margin-bottom: 16px;">\${escapeHtml(sentenceWithHint)}</p>
           <input type="text" class="input-answer" id="answer-\${index}" placeholder="Type your answer...">
         \`;
       } else if (question.type === 'matching') {

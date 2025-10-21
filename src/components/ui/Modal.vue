@@ -297,19 +297,20 @@ onUnmounted(() => {
   position: relative;
   z-index: 10;
   background: white;
-  border-radius: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-height: 90vh;
   overflow: auto;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 32rem; /* 512px */
-  padding: 1.5rem; /* Add padding to the card itself */
+  max-width: 640px; /* Wider like ElevenLabs */
+  padding: 2rem; /* More padding */
 }
 
 .modal-header {
-  @apply px-6 py-4 border-b border-gray-100 flex-shrink-0;
+  @apply mb-4 flex-shrink-0;
+  /* Remove padding since card has padding, remove border for cleaner look */
 }
 
 .modal-content {

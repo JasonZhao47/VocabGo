@@ -51,15 +51,13 @@ verify_jwt = false
 verify_jwt = false
 [functions.generate-practice-questions]
 verify_jwt = false
-[functions.save-practice-session]
+[functions.generate-questions-from-mistakes]
 verify_jwt = false
-[functions.fetch-practice-history]
+[functions.register-student-session]
 verify_jwt = false
-[functions.share-practice-set]
+[functions.record-practice-mistake]
 verify_jwt = false
-[functions.get-shared-practice]
+[functions.fetch-practice-stats]
 verify_jwt = false
-[functions.cleanup-practice-sessions]
-verify_jwt = false
-[functions.cleanup-practice-cache]
+[functions.share-wordlist]
 verify_jwt = false

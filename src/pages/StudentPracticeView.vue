@@ -48,30 +48,55 @@
 
       <!-- Practice Area -->
       <div class="practice-content">
-        <!-- Placeholder for practice questions -->
-        <Card class="practice-card">
+        <!-- Loading Questions -->
+        <div v-if="isLoadingQuestions" class="loading-container">
+          <div class="loading-spinner">
+            <svg class="animate-spin h-12 w-12 text-purple-600" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p class="loading-text">Generating practice questions...</p>
+        </div>
+
+        <!-- Practice Questions -->
+        <div v-else-if="questions && allQuestions.length > 0">
+          <PracticeQuestion
+            v-if="currentQuestionIndex < allQuestions.length"
+            :question="allQuestions[currentQuestionIndex]"
+            :wordlist-id="wordlist!.id"
+            @answered="handleQuestionAnswered"
+          />
+
+          <!-- Completion -->
+          <Card v-else class="completion-card">
+            <div class="completion-content">
+              <div class="completion-icon">🎉</div>
+              <h3 class="completion-title">Practice Complete!</h3>
+              <p class="completion-text">
+                You answered <strong>{{ correctCount }}</strong> out of <strong>{{ totalQuestions }}</strong> correctly
+              </p>
+              <div class="completion-score">
+                <div class="score-circle">
+                  <span class="score-percentage">{{ Math.round((correctCount / totalQuestions) * 100) }}%</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <!-- No Questions Available -->
+        <Card v-else class="practice-card">
           <div class="practice-placeholder">
             <div class="placeholder-icon">
               <svg class="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 class="placeholder-title">Ready to Practice!</h3>
+            <h3 class="placeholder-title">No Questions Available</h3>
             <p class="placeholder-text">
-              Practice questions will appear here. Your mistakes will be tracked to help your teacher create better practice materials.
+              Practice questions could not be generated at this time. Please try again later.
             </p>
-            <div class="wordlist-preview">
-              <h4 class="preview-title">Words in this list:</h4>
-              <div class="word-grid">
-                <div v-for="(word, index) in wordlist.words.slice(0, 6)" :key="index" class="word-item">
-                  <span class="word-en">{{ word.en }}</span>
-                  <span class="word-zh">{{ word.zh }}</span>
-                </div>
-                <div v-if="wordlist.words.length > 6" class="word-item-more">
-                  +{{ wordlist.words.length - 6 }} more
-                </div>
-              </div>
-            </div>
           </div>
         </Card>
       </div>
@@ -113,10 +138,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import StudentNicknameEntry from '@/components/practice/StudentNicknameEntry.vue'
+import PracticeQuestion from '@/components/practice/PracticeQuestion.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Accordion from '@/components/ui/Accordion.vue'
 import { useStudentSession } from '@/composables/useStudentSession'
+import { usePracticeQuestions } from '@/composables/usePracticeQuestions'
 import { useToast } from '@/composables/useToast'
 import type { WordPair } from '@/composables/useStudentSession'
 
@@ -135,14 +162,34 @@ const {
   hasActiveSession,
 } = useStudentSession()
 
+// Practice questions composable
+const {
+  questions,
+  isLoading: isLoadingQuestions,
+  loadQuestions
+} = usePracticeQuestions()
+
 // Local state
 const showNicknameModal = ref(false)
 const wordlist = ref<{ id: string; title: string; words: WordPair[] } | null>(null)
 const personalMistakes = ref<Array<{ word: string; translation: string; count: number }>>([])
+const currentQuestionIndex = ref(0)
+const answeredQuestions = ref<boolean[]>([])
 
-// Practice progress (placeholder for now)
-const answeredCount = ref(0)
-const totalQuestions = ref(0)
+// Computed: all questions in a flat array
+const allQuestions = computed(() => {
+  if (!questions.value) return []
+  return [
+    ...questions.value.matching,
+    ...questions.value.fillBlank,
+    ...questions.value.multipleChoice
+  ]
+})
+
+// Practice progress
+const answeredCount = computed(() => answeredQuestions.value.length)
+const totalQuestions = computed(() => allQuestions.value.length)
+const correctCount = computed(() => answeredQuestions.value.filter(Boolean).length)
 
 // Computed properties
 const progressPercentage = computed(() => {
@@ -159,6 +206,10 @@ async function handleNicknameSubmit(nickname: string) {
 
     if (response.success && response.wordlist) {
       wordlist.value = response.wordlist
+      
+      // Load practice questions
+      await loadQuestions(response.wordlist.id)
+      
       showNicknameModal.value = false
       
       // Store wordlist ID for practice HTML files to access
@@ -179,6 +230,14 @@ async function handleNicknameSubmit(nickname: string) {
     const errorMessage = err instanceof Error ? err.message : 'An error occurred'
     handleNicknameError(errorMessage)
   }
+}
+
+/**
+ * Handle question answered
+ */
+function handleQuestionAnswered(correct: boolean) {
+  answeredQuestions.value.push(correct)
+  currentQuestionIndex.value++
 }
 
 /**
@@ -203,23 +262,9 @@ function retrySession() {
  * Initialize practice view
  */
 async function initializePracticeView() {
-  // Check if user already has an active session
-  if (hasActiveSession()) {
-    // Try to load wordlist data
-    // For now, we'll show the nickname modal if no wordlist data
-    showNicknameModal.value = false
-    
-    // In a real implementation, you would fetch the wordlist here
-    // For now, we'll just show a message
-    showToast({
-      type: 'info',
-      message: 'Welcome back! Practice questions will be available soon.',
-      duration: 3000,
-    })
-  } else {
-    // Show nickname entry modal for first-time visitors
-    showNicknameModal.value = true
-  }
+  // Always show nickname modal
+  // This ensures students enter their name each time they visit
+  showNicknameModal.value = true
 }
 
 // Initialize on mount
@@ -323,6 +368,46 @@ onMounted(() => {
 
 .practice-placeholder {
   @apply flex flex-col items-center justify-center text-center py-12 px-6;
+}
+
+/* Completion Card */
+.completion-card {
+  @apply bg-white rounded-2xl shadow-sm p-8;
+  @apply border border-gray-100;
+}
+
+.completion-content {
+  @apply flex flex-col items-center text-center;
+}
+
+.completion-icon {
+  @apply text-6xl mb-4;
+}
+
+.completion-title {
+  @apply text-3xl font-bold text-gray-900 mb-2;
+}
+
+.completion-text {
+  @apply text-lg text-gray-600 mb-6;
+}
+
+.completion-score {
+  @apply mt-4;
+}
+
+.score-circle {
+  @apply w-32 h-32 rounded-full flex items-center justify-center;
+  @apply border-4 border-purple-500;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.score-percentage {
+  @apply text-3xl font-bold;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .placeholder-icon {

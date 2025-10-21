@@ -11,7 +11,7 @@
           >
             {{ column.label }}
           </th>
-          <th v-if="actions && actions.length > 0" class="table-header-cell align-right">
+          <th v-if="(actions && actions.length > 0) || $slots.actions" class="table-header-cell align-right">
             Actions
           </th>
         </tr>
@@ -19,7 +19,7 @@
       <tbody>
         <template v-if="error">
           <tr>
-            <td :colspan="columns.length + (actions && actions.length > 0 ? 1 : 0)" class="table-cell-empty">
+            <td :colspan="columns.length + ((actions && actions.length > 0) || $slots.actions ? 1 : 0)" class="table-cell-empty">
               <div class="error-state">
                 <slot name="error" :error="error">
                   <p class="error-state-icon">⚠️</p>
@@ -35,14 +35,14 @@
             <td v-for="column in columns" :key="column.key" class="table-cell">
               <div class="skeleton-loader"></div>
             </td>
-            <td v-if="actions && actions.length > 0" class="table-cell">
+            <td v-if="(actions && actions.length > 0) || $slots.actions" class="table-cell">
               <div class="skeleton-loader"></div>
             </td>
           </tr>
         </template>
         <template v-else-if="data.length === 0">
           <tr>
-            <td :colspan="columns.length + (actions && actions.length > 0 ? 1 : 0)" class="table-cell-empty">
+            <td :colspan="columns.length + ((actions && actions.length > 0) || $slots.actions ? 1 : 0)" class="table-cell-empty">
               <div class="empty-state">
                 <slot name="empty">
                   <p class="empty-state-text">No data available</p>
@@ -72,7 +72,7 @@
                 {{ row[column.key] }}
               </template>
             </td>
-            <td v-if="actions && actions.length > 0" class="table-cell table-cell-actions align-right">
+            <td v-if="(actions && actions.length > 0) || $slots.actions" class="table-cell table-cell-actions align-right">
               <div class="table-actions">
                 <slot name="actions" :row="row">
                   <button

@@ -1,11 +1,12 @@
 <template>
   <Modal
     :model-value="modelValue"
-    :closable="false"
-    :close-on-backdrop="false"
-    :close-on-escape="false"
-    :persistent="true"
+    :closable="true"
+    :close-on-backdrop="true"
+    :close-on-escape="true"
+    :persistent="false"
     size="medium"
+    @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="nickname-entry-modal">
       <!-- Header -->
@@ -254,11 +255,19 @@ defineExpose({
 
 <style scoped>
 .nickname-entry-modal {
-  @apply flex flex-col gap-6 py-2;
+  @apply flex flex-col gap-6;
 }
 
 .modal-header-content {
   @apply text-center;
+}
+
+.modal-header-content h2 {
+  @apply text-2xl font-bold text-gray-900 mb-2;
+}
+
+.modal-header-content p {
+  @apply text-base text-gray-600;
 }
 
 .nickname-form {
@@ -274,17 +283,16 @@ defineExpose({
 }
 
 .nickname-input :deep(input) {
-  @apply h-14 text-lg px-5 text-center;
-  /* Gradient border effect on focus */
-  @apply focus:border-transparent;
-  position: relative;
+  @apply h-12 text-base px-4;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 
 .nickname-input :deep(input:focus) {
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #667eea 0%, #764ba2 100%) border-box;
-  border: 2px solid transparent;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  outline: none;
 }
 
 .submit-button {
@@ -292,7 +300,7 @@ defineExpose({
 }
 
 .privacy-note {
-  @apply flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100;
+  @apply flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200;
 }
 
 .privacy-icon {
