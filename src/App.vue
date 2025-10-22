@@ -1,10 +1,5 @@
 <template>
   <div id="app" class="min-h-screen bg-background">
-    <!-- Skip link for accessibility -->
-    <a href="#main-content" class="skip-link">
-      Skip to main content
-    </a>
-    
     <!-- Sidebar navigation (hidden for student view) -->
     <Sidebar
       v-if="!isStudentView"
@@ -167,22 +162,6 @@ const onLeave = (el: Element, done: () => void) => {
 </script>
 
 <style>
-/* Skip link for accessibility */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #000;
-  color: #fff;
-  padding: 8px;
-  text-decoration: none;
-  z-index: 100;
-}
-
-.skip-link:focus {
-  top: 0;
-}
-
 /* Root app container with vertical divider line */
 #app {
   position: relative;
