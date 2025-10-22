@@ -105,7 +105,8 @@ const route = useRoute()
 
 // Check if current route is student practice view (no sidebar/header needed)
 const isStudentView = computed(() => {
-  return route.path.startsWith('/practice/')
+  // Match /practice/:shareToken pattern (but not /dashboard/:wordlistId)
+  return route.path.startsWith('/practice/') && route.name === 'student-practice'
 })
 
 // Compute page title based on current route
@@ -205,6 +206,11 @@ const onLeave = (el: Element, done: () => void) => {
   left: 72px; /* Collapsed sidebar width */
 }
 
+/* Hide divider for fullscreen student view */
+#app:has(.app-layout--fullscreen)::before {
+  display: none;
+}
+
 /* App layout with sidebar and navbar offset */
 .app-layout {
   margin-left: 260px; /* Expanded sidebar width */
@@ -231,6 +237,12 @@ const onLeave = (el: Element, done: () => void) => {
   background: #FFFFFF;
   min-height: calc(100vh - 64px);
   padding: 24px;
+}
+
+/* Remove padding for fullscreen student view */
+.app-layout--fullscreen .app-content {
+  padding: 0;
+  min-height: 100vh;
 }
 
 /* Mobile responsive - no sidebar offset, full width */

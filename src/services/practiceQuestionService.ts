@@ -152,10 +152,24 @@ export function estimateGenerationTime(wordCount: number): number {
   return Math.ceil(baseTime + overhead)
 }
 
+// Batching and rate limiting for mistake recording
+interface PendingMistake {
+  wordlistId: string
+  word: string
+  translation: string
+  questionType: 'multiple_choice' | 'fill_blank' | 'matching'
+}
+
+const pendingMistakes: PendingMistake[] = []
+const recordedMistakes: Set<string> = new Set()
+let batchTimeout: ReturnType<typeof setTimeout> | null = null
+const BATCH_DELAY_MS = 500 // Wait 500ms before sending batch
+const MAX_BATCH_SIZE = 10 // Send batch if it reaches 10 items
+
 /**
- * Record a practice mistake (fire and forget)
+ * Record a practice mistake (batched and rate-limited)
  * This function is called when a student answers incorrectly
- * It handles offline scenarios by queuing mistakes for later
+ * Batches multiple mistakes together to avoid rate limiting
  */
 export async function recordPracticeMistake(
   wordlistId: string,
@@ -165,41 +179,109 @@ export async function recordPracticeMistake(
 ): Promise<void> {
   // Get session token from localStorage
   const sessionToken = localStorage.getItem('student_session_token')
-  
+
   if (!sessionToken) {
     console.warn('No student session token found, skipping mistake recording')
     return
   }
 
-  // Fire and forget - don't block UI
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/record-practice-mistake`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          sessionToken,
-          wordlistId,
-          word,
-          translation,
-          questionType,
-        }),
-      }
-    )
-
-    if (!response.ok) {
-      // If offline or error, queue for later
-      queueMistake({ wordlistId, word, translation, questionType, timestamp: Date.now() })
-      console.warn('Failed to record mistake, queued for later:', { word, questionType })
+  // Deduplicate: check if we already recorded this exact mistake
+  const mistakeKey = `${wordlistId}-${word}-${questionType}`
+  if (recordedMistakes.has(mistakeKey)) {
+    console.log(`Skipping duplicate mistake for "${word}"`)
+    return
+  }
+  
+  // Mark as recorded
+  recordedMistakes.add(mistakeKey)
+  
+  // Add to pending batch
+  pendingMistakes.push({ wordlistId, word, translation, questionType })
+  
+  // If batch is full, send immediately
+  if (pendingMistakes.length >= MAX_BATCH_SIZE) {
+    if (batchTimeout) {
+      clearTimeout(batchTimeout)
+      batchTimeout = null
     }
-  } catch (error) {
-    // Network error - queue for later
-    queueMistake({ wordlistId, word, translation, questionType, timestamp: Date.now() })
-    console.warn('Network error recording mistake, queued for later:', error)
+    await sendMistakeBatch()
+    return
+  }
+  
+  // Otherwise, schedule batch send
+  if (!batchTimeout) {
+    batchTimeout = setTimeout(async () => {
+      await sendMistakeBatch()
+      batchTimeout = null
+    }, BATCH_DELAY_MS)
+  }
+}
+
+/**
+ * Send batched mistakes to the API
+ */
+async function sendMistakeBatch(): Promise<void> {
+  if (pendingMistakes.length === 0) return
+  
+  const sessionToken = localStorage.getItem('student_session_token')
+  if (!sessionToken) return
+  
+  // Take all pending mistakes
+  const batch = [...pendingMistakes]
+  pendingMistakes.length = 0 // Clear the array
+  
+  console.log(`Sending batch of ${batch.length} mistakes`)
+  
+  // Send each mistake with a small delay between requests
+  for (let i = 0; i < batch.length; i++) {
+    const mistake = batch[i]
+    
+    // Add small delay between requests (100ms) to avoid rate limiting
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/record-practice-mistake`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            sessionToken,
+            wordlistId: mistake.wordlistId,
+            word: mistake.word,
+            translation: mistake.translation,
+            questionType: mistake.questionType,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        // If offline or error, queue for later
+        queueMistake({ 
+          wordlistId: mistake.wordlistId, 
+          word: mistake.word, 
+          translation: mistake.translation, 
+          questionType: mistake.questionType, 
+          timestamp: Date.now() 
+        })
+        console.warn('Failed to record mistake, queued for later:', { word: mistake.word, questionType: mistake.questionType })
+      }
+    } catch (error) {
+      // Network error - queue for later
+      queueMistake({ 
+        wordlistId: mistake.wordlistId, 
+        word: mistake.word, 
+        translation: mistake.translation, 
+        questionType: mistake.questionType, 
+        timestamp: Date.now() 
+      })
+      console.warn('Network error recording mistake, queued for later:', error)
+    }
   }
 }
 
@@ -208,7 +290,7 @@ export async function recordPracticeMistake(
  */
 function queueMistake(mistake: QueuedMistake): void {
   mistakeQueue.push(mistake)
-  
+
   // Persist queue to localStorage
   try {
     localStorage.setItem('mistake_queue', JSON.stringify(mistakeQueue))
@@ -303,7 +385,7 @@ async function processQueue(): Promise<void> {
  */
 export function initializeMistakeRecording(): void {
   // Try to process queue on load
-processQueue()
+  processQueue()
 
   // Set up online/offline listeners
   if (typeof window !== 'undefined') {

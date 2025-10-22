@@ -1,21 +1,26 @@
 <template>
   <Modal
     :model-value="modelValue"
-    :closable="true"
-    :close-on-backdrop="true"
-    :close-on-escape="true"
-    :persistent="false"
-    size="medium"
+    :closable="false"
+    :close-on-backdrop="false"
+    :close-on-escape="false"
+    :persistent="true"
+    size="small"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="nickname-entry-modal">
+      <!-- Logo -->
+      <div class="modal-logo" data-animate-child>
+        <span class="logo-text">VocabGo</span>
+      </div>
+
       <!-- Header -->
       <div class="modal-header-content" data-animate-child>
-        <h2 class="text-2xl font-semibold text-gray-900 mb-2">
-          Welcome! 👋
-        </h2>
-        <p class="text-base text-gray-600">
-          Enter your name to start practicing
+        <h1 class="modal-title">
+          Welcome
+        </h1>
+        <p class="modal-subtitle">
+          Enter your name to begin
         </p>
       </div>
 
@@ -25,7 +30,7 @@
           <Input
             ref="inputRef"
             v-model="localNickname"
-            placeholder="Your name (e.g., 小明, Amy, José)"
+            placeholder="Your name"
             :error="validationError"
             :disabled="isSubmitting"
             class="nickname-input"
@@ -34,10 +39,7 @@
           />
 
           <!-- Character count hint -->
-          <div class="flex justify-between items-center mt-2 text-xs">
-            <span class="text-gray-500">
-              Unicode characters supported
-            </span>
+          <div v-if="characterCount > 0" class="character-count-wrapper">
             <span :class="characterCountClasses">
               {{ characterCount }}/20
             </span>
@@ -54,28 +56,14 @@
           full-width
           class="submit-button"
         >
-          {{ isSubmitting ? 'Starting...' : 'Start Practicing' }}
+          {{ isSubmitting ? 'Starting...' : 'Continue' }}
         </Button>
       </form>
 
       <!-- Privacy note -->
       <div class="privacy-note" data-animate-child>
-        <svg 
-          class="privacy-icon" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            stroke-width="2" 
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" 
-          />
-        </svg>
-        <span class="text-sm text-gray-600">
-          Your name will be visible to your teacher. Your practice data is private and secure.
+        <span class="privacy-text">
+          Your teacher will see your name and practice results
         </span>
       </div>
     </div>
@@ -255,89 +243,182 @@ defineExpose({
 
 <style scoped>
 .nickname-entry-modal {
-  @apply flex flex-col gap-6;
+  @apply flex flex-col;
+  gap: 32px;
+  padding: 12px 0;
+}
+
+.modal-logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: #18181b;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .modal-header-content {
   @apply text-center;
 }
 
-.modal-header-content h2 {
-  @apply text-2xl font-bold text-gray-900 mb-2;
+.modal-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
-.modal-header-content p {
-  @apply text-base text-gray-600;
+.modal-subtitle {
+  font-size: 15px;
+  color: #71717a;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .nickname-form {
-  @apply flex flex-col gap-4;
-}
-
-.nickname-input {
-  @apply text-lg;
+  @apply flex flex-col;
+  gap: 16px;
 }
 
 .input-wrapper {
-  @apply w-full;
+  @apply w-full relative;
 }
 
 .nickname-input :deep(input) {
-  @apply h-12 text-base px-4;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  transition: all 0.2s;
+  @apply w-full;
+  height: 48px;
+  padding: 0 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 15px;
+  font-weight: 400;
+  background: #fafafa;
+  color: #18181b;
+}
+
+.nickname-input :deep(input::placeholder) {
+  color: #a1a1aa;
+  font-weight: 400;
+}
+
+.nickname-input :deep(input:hover:not(:disabled)) {
+  background: #ffffff;
+  border-color: #d4d4d8;
 }
 
 .nickname-input :deep(input:focus) {
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  background: #ffffff;
+  border-color: #18181b;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.05);
   outline: none;
 }
 
+.nickname-input :deep(input:disabled) {
+  background: #f4f4f5;
+  border-color: #e4e4e7;
+  color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.character-count-wrapper {
+  @apply absolute right-4 top-1/2;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.character-count-wrapper span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
+}
+
 .submit-button {
-  @apply mt-2;
+  height: 48px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 15px;
+  background: #18181b;
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #27272a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:disabled {
+  background: #f4f4f5;
+  color: #a1a1aa;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .privacy-note {
-  @apply flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200;
+  @apply text-center;
+  padding-top: 4px;
 }
 
-.privacy-icon {
-  @apply w-4 h-4 text-gray-400 flex-shrink-0;
-  min-width: 1rem;
-  min-height: 1rem;
-  max-width: 1rem;
-  max-height: 1rem;
+.privacy-text {
+  font-size: 13px;
+  color: #a1a1aa;
+  font-weight: 400;
+  line-height: 1.6;
 }
 
 /* Enhanced animations for modal content */
 @media (prefers-reduced-motion: no-preference) {
-  .modal-header-content h2 {
+  .modal-title {
     @apply transition-all duration-300;
   }
   
   .nickname-input :deep(input) {
-    @apply transition-all duration-200;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .submit-button {
-    @apply transition-all duration-200;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .nickname-entry-modal {
-    @apply gap-5 py-1;
+    gap: 28px;
+    padding: 8px 0;
   }
   
-  .modal-header-content h2 {
-    @apply text-xl;
+  .modal-title {
+    font-size: 24px;
+  }
+  
+  .modal-subtitle {
+    font-size: 14px;
   }
   
   .nickname-input :deep(input) {
-    @apply h-12 text-base;
+    height: 46px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .submit-button {
+    height: 46px;
   }
 }
 </style>

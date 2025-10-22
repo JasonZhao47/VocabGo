@@ -131,7 +131,7 @@ serve(async (req) => {
     // Fetch wordlist
     const { data: wordlist, error: fetchError } = await supabase
       .from('wordlists')
-      .select('id, words, filename, session_id')
+      .select('id, words, filename, session_id, is_shared')
       .eq('id', body.wordlistId)
       .single()
 
@@ -151,8 +151,11 @@ serve(async (req) => {
       )
     }
 
-    // Verify ownership
-    if (wordlist.session_id !== sessionId) {
+    // Verify ownership or shared access
+    const isOwner = wordlist.session_id === sessionId
+    const isShared = wordlist.is_shared === true
+    
+    if (!isOwner && !isShared) {
       return new Response(
         JSON.stringify({
           success: false,

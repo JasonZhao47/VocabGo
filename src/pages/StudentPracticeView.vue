@@ -38,12 +38,6 @@
           <span class="greeting">Hi, {{ studentNickname }}! 👋</span>
           <span class="wordlist-title">{{ wordlist.title }}</span>
         </div>
-        <div v-if="totalQuestions > 0" class="progress-indicator">
-          <span class="progress-text">{{ answeredCount }} / {{ totalQuestions }}</span>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercentage + '%' }" />
-          </div>
-        </div>
       </div>
 
       <!-- Practice Area -->
@@ -61,11 +55,12 @@
 
         <!-- Practice Questions -->
         <div v-else-if="questions && allQuestions.length > 0">
-          <PracticeQuestion
-            v-if="currentQuestionIndex < allQuestions.length"
-            :question="allQuestions[currentQuestionIndex]"
+          <AllQuestionsView
+            v-if="!practiceCompleted"
+            :questions="questions"
             :wordlist-id="wordlist!.id"
-            @answered="handleQuestionAnswered"
+            :wordlist-name="wordlist!.title"
+            @complete="handlePracticeComplete"
           />
 
           <!-- Completion -->
@@ -74,11 +69,11 @@
               <div class="completion-icon">🎉</div>
               <h3 class="completion-title">Practice Complete!</h3>
               <p class="completion-text">
-                You answered <strong>{{ correctCount }}</strong> out of <strong>{{ totalQuestions }}</strong> correctly
+                You answered <strong>{{ completionCorrectCount }}</strong> out of <strong>{{ completionTotalCount }}</strong> correctly
               </p>
               <div class="completion-score">
                 <div class="score-circle">
-                  <span class="score-percentage">{{ Math.round((correctCount / totalQuestions) * 100) }}%</span>
+                  <span class="score-percentage">{{ completionScore }}%</span>
                 </div>
               </div>
             </div>
@@ -138,7 +133,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import StudentNicknameEntry from '@/components/practice/StudentNicknameEntry.vue'
-import PracticeQuestion from '@/components/practice/PracticeQuestion.vue'
+import AllQuestionsView from '@/components/practice/AllQuestionsView.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Accordion from '@/components/ui/Accordion.vue'
@@ -173,8 +168,10 @@ const {
 const showNicknameModal = ref(false)
 const wordlist = ref<{ id: string; title: string; words: WordPair[] } | null>(null)
 const personalMistakes = ref<Array<{ word: string; translation: string; count: number }>>([])
-const currentQuestionIndex = ref(0)
-const answeredQuestions = ref<boolean[]>([])
+const practiceCompleted = ref(false)
+const completionScore = ref(0)
+const completionCorrectCount = ref(0)
+const completionTotalCount = ref(0)
 
 // Computed: all questions in a flat array
 const allQuestions = computed(() => {
@@ -184,17 +181,6 @@ const allQuestions = computed(() => {
     ...questions.value.fillBlank,
     ...questions.value.multipleChoice
   ]
-})
-
-// Practice progress
-const answeredCount = computed(() => answeredQuestions.value.length)
-const totalQuestions = computed(() => allQuestions.value.length)
-const correctCount = computed(() => answeredQuestions.value.filter(Boolean).length)
-
-// Computed properties
-const progressPercentage = computed(() => {
-  if (totalQuestions.value === 0) return 0
-  return Math.round((answeredCount.value / totalQuestions.value) * 100)
 })
 
 /**
@@ -233,11 +219,13 @@ async function handleNicknameSubmit(nickname: string) {
 }
 
 /**
- * Handle question answered
+ * Handle practice complete
  */
-function handleQuestionAnswered(correct: boolean) {
-  answeredQuestions.value.push(correct)
-  currentQuestionIndex.value++
+function handlePracticeComplete(score: number, correct: number, total: number) {
+  practiceCompleted.value = true
+  completionScore.value = score
+  completionCorrectCount.value = correct
+  completionTotalCount.value = total
 }
 
 /**
@@ -285,6 +273,14 @@ onMounted(() => {
 <style scoped>
 .student-practice-view-wrapper {
   @apply min-h-screen bg-white;
+  /* Ensure fullscreen without any navigation offsets */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  z-index: 1000;
 }
 
 .student-practice-view {
