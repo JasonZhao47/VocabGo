@@ -1,15 +1,18 @@
 <template>
   <div class="wordlists-page">
-    <!-- Header with ElevenLabs styling - Responsive (Task 8.3) -->
-    <div data-animate-child class="wordlists-header">
-      <h1 class="wordlists-title">Saved Wordlists</h1>
+    <!-- Header with proper semantic HTML (Requirement 13.2) -->
+    <header data-animate-child class="wordlists-header">
+      <h1 id="page-title" class="wordlists-title">Saved Wordlists</h1>
       
-      <!-- Optional search bar with minimal styling -->
-      <div class="search-container">
+      <!-- Search bar with proper ARIA labels (Requirement 13.2) -->
+      <div class="search-container" role="search">
+        <label for="wordlist-search" class="sr-only">Search wordlists</label>
         <input
+          id="wordlist-search"
           v-model="searchQuery"
-          type="text"
+          type="search"
           placeholder="Search wordlists..."
+          aria-label="Search wordlists by filename"
           class="search-input"
         />
         <svg 
@@ -17,20 +20,24 @@
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
-    </div>
+    </header>
 
-    <!-- DataTable Component -->
-    <DataTable
-      :columns="tableColumns"
-      :data="tableData"
-      :loading="isLoading"
-      :error="hasError ? error : null"
-      :on-row-click="handleRowClick"
-    >
+    <!-- DataTable Component with proper ARIA (Requirement 13.2) -->
+    <section aria-labelledby="wordlists-table-heading">
+      <h2 id="wordlists-table-heading" class="sr-only">Wordlists table</h2>
+      <DataTable
+        :columns="tableColumns"
+        :data="tableData"
+        :loading="isLoading"
+        :error="hasError ? error : null"
+        :on-row-click="handleRowClick"
+        aria-label="Saved wordlists"
+      >
       <!-- Custom empty state -->
       <template #empty>
         <div v-if="!hasWordlists" class="custom-empty-state">
@@ -89,21 +96,24 @@
           />
         </div>
       </template>
-    </DataTable>
+      </DataTable>
+    </section>
 
-    <!-- Expanded Wordlist View -->
+    <!-- Expanded Wordlist View with proper semantic HTML (Requirement 13.2) -->
     <Transition
       name="expand"
       @enter="onExpandEnter"
       @leave="onExpandLeave"
     >
-      <div 
+      <section 
         v-if="expandedWordlist"
         class="wordlist-expanded"
+        aria-labelledby="expanded-wordlist-title"
+        role="region"
       >
         <!-- Sharing Section -->
         <div class="expanded-section">
-          <h4 class="expanded-title">Share with Students</h4>
+          <h2 id="expanded-wordlist-title" class="expanded-title">Share with Students</h2>
           <ShareWordlistButton
             :wordlist-id="expandedWordlist.id"
             :initial-share-token="expandedWordlist.share_token"
@@ -115,9 +125,10 @@
 
         <!-- Word Pairs Section -->
         <div class="expanded-section">
-          <h4 class="expanded-title">Word Pairs</h4>
+          <h3 class="expanded-title">Word Pairs</h3>
           <div class="expanded-table-container">
-            <table class="expanded-table">
+            <table class="expanded-table" aria-label="Word pairs in this wordlist">
+              <caption class="sr-only">English to Mandarin word translations</caption>
               <thead>
                 <tr class="expanded-table-header">
                   <th scope="col" class="expanded-table-header-cell">
@@ -141,12 +152,16 @@
             </table>
           </div>
         </div>
-      </div>
+      </section>
     </Transition>
 
-    <!-- Delete Confirmation Modal with ElevenLabs styling -->
+    <!-- Delete Confirmation Modal with proper ARIA (Requirement 13.2) -->
     <div 
       v-if="showDeleteConfirm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-dialog-title"
+      aria-describedby="delete-dialog-description"
       class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-250"
       @click.self="cancelDelete"
     >
@@ -160,26 +175,35 @@
             </div>
           </div>
           <div class="flex-1">
-            <h3 class="text-[20px] font-semibold text-black">Delete Wordlist</h3>
-            <p class="mt-2 text-[15px] text-gray-600 leading-relaxed">
+            <h2 id="delete-dialog-title" class="text-[18px] font-semibold text-black" style="letter-spacing: -0.01em;">Delete Wordlist</h2>
+            <p id="delete-dialog-description" class="mt-2 text-[15px] text-gray-600 leading-relaxed" style="letter-spacing: -0.005em; line-height: 1.6;">
               Are you sure you want to delete "<span class="font-medium text-black">{{ deleteTarget?.filename }}</span>"? This action cannot be undone.
             </p>
           </div>
         </div>
         <div class="mt-8 flex gap-3">
           <button
+            type="button"
             @click="cancelDelete"
             :disabled="deletingId !== null"
+            :aria-disabled="deletingId !== null"
+            aria-label="Cancel deletion"
             class="flex-1 h-11 px-6 text-[15px] font-semibold text-black bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            style="letter-spacing: -0.01em;"
           >
             Cancel
           </button>
           <button
+            type="button"
             @click="handleDelete"
             :disabled="deletingId !== null"
+            :aria-disabled="deletingId !== null"
+            :aria-busy="deletingId !== null"
+            :aria-label="deletingId !== null ? 'Deleting wordlist' : 'Confirm deletion'"
             class="flex-1 h-11 px-6 text-[15px] font-semibold text-white bg-red-600 border border-transparent rounded-full hover:bg-red-700 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style="letter-spacing: -0.01em;"
           >
-            <span v-if="deletingId !== null" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span v-if="deletingId !== null" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true"></span>
             <span>{{ deletingId !== null ? 'Deleting...' : 'Delete' }}</span>
           </button>
         </div>
@@ -537,61 +561,44 @@ function handleShareDisabled(wordlistId: string) {
 </script>
 
 <style scoped>
-/* Mobile-first Responsive Design */
+/* Mobile-first Responsive Design - ElevenLabs Styling */
 
-/* Page Container */
+/* Page Container - ElevenLabs exact: max-width 1200px, consistent padding */
 .wordlists-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 16px;
-  background: #FFFFFF;
+  padding: 64px 48px 48px;
+  background: rgb(255, 255, 255);
+  min-height: 100vh;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .wordlists-page {
-    padding: 32px 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .wordlists-page {
-    padding: 48px 32px;
+    padding: 48px 24px 32px;
   }
 }
 
 /* Header Section */
 .wordlists-header {
-  margin-bottom: 32px;
+  margin-bottom: 48px;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .wordlists-header {
-    margin-bottom: 40px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .wordlists-header {
-    margin-bottom: 48px;
+    margin-bottom: 32px;
   }
 }
 
 .wordlists-title {
-  font-size: 24px;
+  font-size: 48px;
   font-weight: 700;
-  color: #000000;
-  line-height: 1.2;
-  margin-bottom: 20px;
+  color: rgb(0, 0, 0);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
 }
 
-@media (min-width: 768px) {
-  .wordlists-title {
-    font-size: 28px;
-    margin-bottom: 24px;
-  }
-}
-
-@media (min-width: 1024px) {
+@media (max-width: 767px) {
   .wordlists-title {
     font-size: 32px;
   }
@@ -605,120 +612,167 @@ function handleShareDisabled(wordlistId: string) {
 
 @media (min-width: 768px) {
   .search-container {
-    max-width: 28rem;
+    max-width: 400px;
   }
 }
 
 .search-input {
   width: 100%;
-  height: 44px;
+  height: 48px;
   padding: 0 16px;
-  padding-right: 40px;
-  font-size: 14px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  transition: border-color 150ms ease-out;
-  min-height: 44px;
+  padding-right: 48px;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(229, 229, 229);
+  border-radius: 8px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .search-input {
-    height: 44px;
-    font-size: 15px;
+    min-height: 44px;
+    font-size: 16px;
   }
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #9ca3af;
+  border-color: rgb(0, 0, 0);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.search-input::placeholder {
+  color: rgb(163, 163, 163);
 }
 
 .search-icon {
   position: absolute;
-  right: 12px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: rgb(163, 163, 163);
   pointer-events: none;
 }
 
-/* Custom Empty State */
+/* Custom Empty State - ElevenLabs styling */
 .custom-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 96px 24px;
+  background: rgb(250, 250, 250);
+  border-radius: 12px;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  color: #d1d5db;
-  margin-bottom: 24px;
+  width: 80px;
+  height: 80px;
+  color: rgb(229, 229, 229);
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadeInUp 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms forwards;
 }
 
 .empty-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #000000;
+  font-size: 24px;
+  font-weight: 700;
+  color: rgb(0, 0, 0);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   margin: 0 0 8px 0;
+  opacity: 0;
+  animation: fadeInUp 500ms cubic-bezier(0.4, 0, 0.2, 1) 200ms forwards;
 }
 
 .empty-description {
-  font-size: 15px;
-  color: #6b7280;
+  font-size: 18px;
+  font-weight: 400;
+  color: rgb(115, 115, 115);
+  line-height: 1.6;
+  letter-spacing: -0.005em;
   margin: 0 0 32px 0;
+  text-align: center;
+  opacity: 0;
+  animation: fadeInUp 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms forwards;
 }
 
 .empty-action-button {
   display: inline-flex;
   align-items: center;
-  height: 44px;
-  padding: 0 24px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
-  background: #000000;
+  height: 48px;
+  padding: 0 32px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgb(255, 255, 255);
+  background: rgb(0, 0, 0);
   border-radius: 9999px;
   text-decoration: none;
-  transition: background-color 150ms ease-out;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  animation: fadeInUp 500ms cubic-bezier(0.4, 0, 0.2, 1) 400ms forwards;
 }
 
 .empty-action-button:hover {
-  background: #374151;
+  background: rgb(38, 38, 38);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Custom Error State */
+.empty-action-button:active {
+  transform: scale(0.98);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Error State - ElevenLabs styling */
 .custom-error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 96px 24px;
+  background: rgb(250, 250, 250);
+  border-radius: 12px;
 }
 
 .error-icon {
-  width: 48px;
-  height: 48px;
-  color: #dc2626;
-  margin-bottom: 16px;
+  width: 64px;
+  height: 64px;
+  color: rgb(220, 38, 38);
+  margin-bottom: 24px;
 }
 
 .error-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #dc2626;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgb(220, 38, 38);
+  letter-spacing: -0.01em;
   margin: 0 0 8px 0;
 }
 
 .error-description {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgb(115, 115, 115);
+  line-height: 1.6;
   margin: 0;
+  text-align: center;
 }
 
 /* Table Action Buttons */
@@ -728,54 +782,79 @@ function handleShareDisabled(wordlistId: string) {
   justify-content: flex-end;
 }
 
-/* Table Cell Styling */
+/* Table Cell Styling - ElevenLabs typography */
 :deep(.table-date) {
-  font-size: 15px;
-  color: #6b7280;
+  font-size: 18px;
+  font-weight: 400;
+  color: rgb(115, 115, 115);
+  letter-spacing: -0.005em;
 }
 
 :deep(.table-word-count) {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
-  background: #000000;
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgb(255, 255, 255);
+  background: rgb(0, 0, 0);
   border-radius: 9999px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Share Status Badge */
+:deep(.table-word-count:hover) {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Share Status Badge - ElevenLabs styling */
 :deep(.share-status-badge) {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
+  gap: 6px;
+  padding: 6px 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   border-radius: 9999px;
-  transition: all 150ms ease-out;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :deep(.share-status-active) {
-  color: #ffffff;
+  color: rgb(255, 255, 255);
   background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.4);
+}
+
+:deep(.share-status-active:hover) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.5);
 }
 
 :deep(.share-status-inactive) {
-  color: #6b7280;
-  background: #f3f4f6;
+  color: rgb(115, 115, 115);
+  background: rgb(242, 242, 242);
 }
 
-/* Expanded Wordlist View */
+:deep(.share-status-inactive:hover) {
+  background: rgb(229, 229, 229);
+}
+
+/* Expanded Wordlist View - ElevenLabs card styling */
 .wordlist-expanded {
-  margin-top: 24px;
-  padding: 24px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  margin-top: 32px;
+  padding: 32px;
+  background: rgb(250, 250, 250);
+  border: 1px solid rgb(242, 242, 242);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wordlist-expanded:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .expanded-section {
@@ -787,19 +866,20 @@ function handleShareDisabled(wordlistId: string) {
 }
 
 .expanded-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(115, 115, 115);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   margin: 0 0 16px 0;
 }
 
 .expanded-table-container {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
+  background: rgb(255, 255, 255);
+  border: 1px solid rgb(242, 242, 242);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .expanded-table {
@@ -808,23 +888,23 @@ function handleShareDisabled(wordlistId: string) {
 }
 
 .expanded-table-header {
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  background: rgb(250, 250, 250);
+  border-bottom: 1px solid rgb(242, 242, 242);
 }
 
 .expanded-table-header-cell {
-  padding: 12px 20px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
+  padding: 16px 24px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(115, 115, 115);
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
 
 .expanded-table-row {
-  border-bottom: 1px solid #f5f5f5;
-  transition: all 150ms ease-out;
+  border-bottom: 1px solid rgb(245, 245, 245);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .expanded-table-row:last-child {
@@ -832,28 +912,31 @@ function handleShareDisabled(wordlistId: string) {
 }
 
 .expanded-table-row:hover {
-  background: #fafafa;
-  transform: translateX(2px);
+  background: rgb(250, 250, 250);
+  transform: translateX(4px);
 }
 
 .expanded-table-cell {
-  padding: 16px 20px;
-  font-size: 15px;
-  color: #000000;
+  padding: 20px 24px;
+  font-size: 18px;
+  font-weight: 400;
+  color: rgb(0, 0, 0);
+  letter-spacing: -0.005em;
+  line-height: 1.6;
 }
 
 .expanded-table-cell:first-child {
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .expanded-table-cell:last-child {
-  color: #374151;
+  color: rgb(64, 64, 64);
 }
 
 /* Expand transition styles */
 .expand-enter-active,
 .expand-leave-active {
-  transition: all 200ms ease-out;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .expand-enter-from,
@@ -862,12 +945,39 @@ function handleShareDisabled(wordlistId: string) {
   transform: translateY(-10px);
 }
 
+/* Screen reader only class for accessibility (Requirement 13.2) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Ensure elements are visible by default (for reduced motion users) */
 @media (prefers-reduced-motion: reduce) {
   .wordlist-expanded,
-  .expanded-table-row {
+  .expanded-table-row,
+  .empty-icon,
+  .empty-title,
+  .empty-description,
+  .empty-action-button {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
+  }
+  
+  .custom-empty-state,
+  .wordlist-expanded,
+  .expanded-table-row,
+  .empty-action-button,
+  :deep(.table-word-count),
+  :deep(.share-status-badge) {
+    transition: none !important;
   }
 }
 </style>

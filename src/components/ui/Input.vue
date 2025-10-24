@@ -4,7 +4,7 @@
     <label
       v-if="label"
       :for="inputId"
-      class="block text-sm font-medium text-gray-700 mb-2"
+      class="block text-sm font-normal text-black mb-1"
     >
       {{ label }}
       <span v-if="required" class="text-red-500 ml-1">*</span>
@@ -32,24 +32,33 @@
         @keydown="handleKeydown"
       />
 
-      <!-- Success Indicator -->
-      <div
-        v-if="success && !$slots.icon"
-        class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+      <!-- Success Indicator with smooth animation -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 scale-50"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-50"
       >
-        <svg 
-          class="w-5 h-5 text-green-500 animate-[fadeIn_0.3s_ease-out]" 
-          fill="currentColor" 
-          viewBox="0 0 20 20"
-          aria-hidden="true"
+        <div
+          v-if="success && !$slots.icon"
+          class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
         >
-          <path
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </div>
+          <svg 
+            class="w-5 h-5 text-green-500" 
+            fill="currentColor" 
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div>
+      </Transition>
 
       <!-- Icon Slot -->
       <div
@@ -64,27 +73,36 @@
     <p
       v-if="helperText && !error"
       :id="`${inputId}-helper`"
-      class="mt-2 text-sm text-gray-500"
+      class="mt-1 text-sm text-gray-600"
     >
       {{ helperText }}
     </p>
 
-    <!-- Error Message -->
-    <p
-      v-if="error"
-      :id="`${inputId}-error`"
-      class="mt-2 text-sm text-red-600 flex items-center gap-1"
-      role="alert"
+    <!-- Error Message with smooth fade-in -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-1"
     >
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-        <path
-          fill-rule="evenodd"
-          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-          clip-rule="evenodd"
-        />
-      </svg>
-      {{ error }}
-    </p>
+      <p
+        v-if="error"
+        :id="`${inputId}-error`"
+        class="mt-1 text-sm text-red-600 flex items-center gap-1"
+        role="alert"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path
+            fill-rule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        {{ error }}
+      </p>
+    </Transition>
   </div>
 </template>
 
@@ -171,57 +189,57 @@ const inputClasses = computed(() => {
   const baseClasses = [
     'block',
     'w-full',
-    'h-11',
-    'px-4',
+    'px-3',
+    'py-2',
     'text-base',
     'bg-white',
     'border',
-    'rounded-xl',
-    'transition-all',
+    'rounded-[8px]', // 8px border radius per ElevenLabs design
+    'transition-colors',
     'duration-200',
-    'ease-out',
-    'placeholder-gray-400',
+    'ease-in-out',
+    'placeholder:opacity-50', // Reduced opacity for placeholder
+    'placeholder:text-gray-500',
     'focus:outline-none',
-    'focus:ring-0',
-    'theme-transition'
+    'focus:ring-0'
   ]
 
-  // State-based classes with enhanced focus animations
+  // State-based classes with ElevenLabs styling
   if (props.error) {
+    // Error state with red borders
     baseClasses.push(
-      'border-red-300',
-      'focus:border-red-500',
-      'focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]',
-      'bg-red-50'
+      'border-red-500',
+      'focus:border-red-600',
+      'focus:ring-2',
+      'focus:ring-red-200'
     )
   } else if (props.success) {
     baseClasses.push(
-      'border-green-300',
-      'focus:border-green-500',
-      'focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]',
-      'bg-green-50'
+      'border-green-500',
+      'focus:border-green-600',
+      'focus:ring-2',
+      'focus:ring-green-200'
     )
   } else if (isFocused.value) {
+    // Focus ring with black border and gray ring
     baseClasses.push(
       'border-black',
-      'bg-white',
-      'shadow-[0_0_0_3px_rgba(0,0,0,0.05)]'
+      'ring-2',
+      'ring-gray-200'
     )
   } else {
     baseClasses.push(
       'border-gray-300',
-      'hover:border-gray-400',
-      'bg-gray-50'
+      'hover:border-gray-400'
     )
   }
 
-  // Disabled state
+  // Disabled state with reduced opacity
   if (props.disabled) {
     baseClasses.push(
-      'bg-gray-100',
-      'text-gray-500',
+      'opacity-50',
       'cursor-not-allowed',
-      'border-gray-200'
+      'bg-gray-50'
     )
   }
 
@@ -253,15 +271,3 @@ defineExpose({
 })
 </script>
 
-<style scoped>
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-</style>

@@ -1,19 +1,21 @@
 <template>
-  <div style="min-height: 100vh; background-color: #FFFFFF;">
-    <!-- Main Content with Proper Padding -->
-    <div style="max-width: 700px; margin: 0 auto; padding: 60px 24px 40px;">
-      <!-- Page Header with Clean Typography -->
-      <div data-animate-child style="margin-bottom: 48px;">
-        <p style="font-size: 11px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">UPLOAD DOCUMENT</p>
-        <h1 style="font-size: 36px; font-weight: 700; color: #000000; margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.01em;">Upload Document</h1>
-        <p style="font-size: 18px; color: #6B7280; line-height: 1.6; max-width: 576px;">Extract vocabulary from your reading materials</p>
-      </div>
+  <div style="min-height: 100vh; background-color: #F9FAFB;">
+    <!-- Main Content with ElevenLabs exact specs: 752px max-width, 48px horizontal, 64px top -->
+    <div style="max-width: 752px; margin: 0 auto; padding: 64px 48px 48px;">
+      <!-- Page Header with proper semantic HTML (Requirement 13.2) -->
+      <header :class="getStaggerClass(0)" style="margin-bottom: 48px;">
+        <h1 id="page-title" style="font-size: 30px; font-weight: 600; color: #000000; margin-bottom: 8px; line-height: 1.2; letter-spacing: 0;">Upload Document</h1>
+        <p id="page-description" style="font-size: 14px; font-weight: 400; color: #6B7280; line-height: 1.5; letter-spacing: 0;">Extract vocabulary from your reading materials</p>
+      </header>
 
       <!-- English Resources - Horizontal Scrollable Boxes (ElevenLabs 1:1 Replication) -->
-      <div data-animate-child style="margin-bottom: 32px; position: relative;">
+      <section :class="getStaggerClass(1)" style="margin-bottom: 32px; position: relative;" aria-labelledby="resources-heading">
+        <h2 id="resources-heading" class="sr-only">Select document type</h2>
         <!-- Left Scroll Arrow -->
         <button
           v-if="canScrollLeft"
+          type="button"
+          aria-label="Scroll left to view more document types"
           @click="scrollLeft"
           style="position: absolute; left: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
           @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
@@ -27,6 +29,8 @@
         <!-- Right Scroll Arrow -->
         <button
           v-if="canScrollRight"
+          type="button"
+          aria-label="Scroll right to view more document types"
           @click="scrollRight"
           style="position: absolute; right: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
           @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
@@ -40,6 +44,8 @@
         <!-- Scrollable container -->
         <div 
           ref="scrollContainer"
+          role="group"
+          aria-label="Document type selection"
           class="scrollable-resources" 
           style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;"
           @scroll="updateScrollButtons"
@@ -48,6 +54,9 @@
             <button
               v-for="resource in englishResources"
               :key="resource.id"
+              type="button"
+              :aria-label="`Select ${resource.title} document type`"
+              :aria-pressed="selectedResource === resource.id"
               @click="selectResource(resource.id)"
               :style="{
                 minWidth: '200px',
@@ -82,36 +91,48 @@
               </div>
               
               <!-- Title -->
-              <div style="font-size: 15px; font-weight: 600; color: #000000; line-height: 1.3;">
+              <div style="font-size: 16px; font-weight: 600; color: #000000; line-height: 1.3; letter-spacing: 0;">
                 {{ resource.title }}
               </div>
               
               <!-- Description -->
-              <div style="font-size: 13px; color: #6B7280; line-height: 1.5;">
+              <div style="font-size: 14px; color: #6B7280; line-height: 1.6; letter-spacing: 0;">
                 {{ resource.description }}
               </div>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ElevenLabs-style Drop Zone -->
-      <div
-        data-animate-child
-        :style="{
-          minHeight: '280px',
-          borderRadius: '12px',
-          padding: '48px',
-          transition: 'all 200ms ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '2px dashed',
-          borderColor: (validationError || error) ? '#DC2626' : isDragging ? '#000000' : '#E5E7EB',
-          backgroundColor: (validationError || error) ? '#FEE2E2' : '#F8F9FA',
-          opacity: (!canUpload || isProcessing) ? '0.5' : '1',
-          cursor: (!canUpload || isProcessing) ? 'not-allowed' : 'pointer'
-        }"
+      <!-- ElevenLabs-style Drop Zone with Card styling and smooth transitions -->
+      <section aria-labelledby="upload-heading">
+        <h2 id="upload-heading" class="sr-only">Upload your document</h2>
+        <Card
+          data-animate-child
+          variant="outlined"
+          padding="large"
+          :interactive="false"
+          role="region"
+          aria-label="File upload drop zone"
+          aria-describedby="upload-instructions"
+          :class="[
+          'min-h-[280px]',
+          'flex',
+          'items-center',
+          'justify-center',
+          'border-2',
+          'border-dashed',
+          'transition-all',
+          'duration-300',
+          'ease-in-out',
+          {
+            'border-red-600 bg-red-50 scale-[0.98]': validationError || error,
+            'border-black bg-gray-50 scale-[1.02]': isDragging && !validationError && !error,
+            'border-gray-300 bg-[#F8F9FA]': !isDragging && !validationError && !error,
+            'opacity-50 cursor-not-allowed': !canUpload || isProcessing,
+            'cursor-pointer hover:border-gray-400 hover:bg-gray-50 hover:scale-[1.01]': canUpload && !isProcessing && !isDragging
+          }
+        ]"
         @dragover.prevent="onDragOver"
         @dragleave.prevent="onDragLeave"
         @drop.prevent="onDrop"
@@ -120,6 +141,7 @@
         <input
           ref="fileInput"
           type="file"
+          aria-label="Choose file to upload"
           style="display: none;"
           accept=".pdf,.txt,.docx,.xlsx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           @change="onFileSelect"
@@ -142,10 +164,112 @@
             ></path>
           </svg>
 
-          <!-- Selected File Display -->
-          <div v-if="selectedFile" style="display: flex; align-items: center; gap: 12px; padding: 16px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #E5E7EB;">
+          <!-- Selected File Display with fade-in animation -->
+          <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+          >
+            <div v-if="selectedFile" style="display: flex; align-items: center; gap: 12px; padding: 16px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #E5E7EB;">
+              <svg
+                style="width: 24px; height: 24px; color: #6B7280; flex-shrink: 0;"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+                <p style="font-size: 15px; font-weight: 600; color: #000000; word-break: break-word; line-height: 1.4; letter-spacing: -0.01em;">{{ selectedFile.name }}</p>
+                <p style="font-size: 14px; color: #6B7280; letter-spacing: -0.005em;">{{ formatFileSize(selectedFile.size) }}</p>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Upload Instructions with fade-in animation -->
+          <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+          >
+            <div v-if="!selectedFile" id="upload-instructions" style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
+              <p style="font-size: 16px; font-weight: 600; color: #000000; line-height: 1.3; letter-spacing: 0;">
+                Click to upload or drag and drop
+              </p>
+              <p style="font-size: 14px; color: #6B7280; line-height: 1.6; letter-spacing: 0;">
+                Supported formats: PDF, TXT, DOCX, XLSX
+              </p>
+              <p style="font-size: 14px; color: #9CA3AF; line-height: 1.5;">Maximum file size: 50MB</p>
+            </div>
+          </Transition>
+        </div>
+      </Card>
+      </section>
+
+      <!-- Loading Skeleton for Processing State with Card styling and fade-in animation -->
+      <!-- Live region for dynamic status updates (Requirement 13.2) -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-2"
+      >
+        <div 
+          v-if="isProcessing" 
+          class="mt-6 space-y-4" 
+          data-animate-child
+          role="status"
+          aria-live="polite"
+          aria-label="Processing document"
+        >
+          <Card variant="outlined" padding="medium">
+            <div class="flex items-center gap-4 mb-4">
+              <Skeleton variant="circular" width="48px" height="48px" />
+              <div class="flex-1 space-y-2">
+                <Skeleton variant="text" width="60%" height="20px" />
+                <Skeleton variant="text" width="40%" height="16px" />
+              </div>
+            </div>
+            <Skeleton variant="rectangular" width="100%" height="120px" />
+          </Card>
+        </div>
+      </Transition>
+
+      <!-- Error Display with Card styling and fade-in animation -->
+      <!-- Live region for error announcements (Requirement 13.2) -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-2"
+      >
+        <Card 
+          v-if="validationError || error" 
+          variant="outlined" 
+          padding="medium"
+          role="alert"
+          aria-live="assertive"
+          class="mt-4 bg-red-50 border-red-600"
+        >
+          <div class="flex items-center gap-2 text-red-900 text-[15px] leading-relaxed">
             <svg
-              style="width: 24px; height: 24px; color: #6B7280; flex-shrink: 0;"
+              class="w-5 h-5 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -155,101 +279,31 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               ></path>
             </svg>
-            <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-              <p style="font-size: 16px; font-weight: 500; color: #000000; word-break: break-word; line-height: 1.4;">{{ selectedFile.name }}</p>
-              <p style="font-size: 14px; color: #6B7280;">{{ formatFileSize(selectedFile.size) }}</p>
-            </div>
+            <span>{{ validationError || error }}</span>
           </div>
+        </Card>
+      </Transition>
 
-          <!-- Upload Instructions -->
-          <div v-else style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
-            <p style="font-size: 16px; font-weight: 500; color: #000000; line-height: 1.6;">
-              Click to upload or drag and drop
-            </p>
-            <p style="font-size: 14px; color: #6B7280; line-height: 1.5;">
-              Supported formats: PDF, TXT, DOCX, XLSX
-            </p>
-            <p style="font-size: 13px; color: #9CA3AF; line-height: 1.5;">Maximum file size: 50MB</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Error Display -->
-      <div v-if="validationError || error" style="display: flex; align-items: center; gap: 8px; padding: 16px; margin-top: 16px; background-color: #FEE2E2; border: 1px solid #DC2626; border-radius: 8px; color: #991B1B; font-size: 14px;">
-        <svg
-          style="width: 20px; height: 20px; flex-shrink: 0;"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <span>{{ validationError || error }}</span>
-      </div>
-
-      <!-- Upload Button (Black Pill) -->
-      <button
+      <!-- Upload Button using Button component -->
+      <Button
         data-animate-child
-        :style="{
-          width: '100%',
-          height: '56px',
-          marginTop: '24px',
-          padding: '0 32px',
-          backgroundColor: canUploadFile ? '#000000' : '#D1D5DB',
-          color: '#FFFFFF',
-          border: 'none',
-          borderRadius: '9999px',
-          fontSize: '16px',
-          fontWeight: '600',
-          cursor: canUploadFile ? 'pointer' : 'not-allowed',
-          transition: 'all 150ms ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px'
-        }"
+        variant="primary"
+        size="md"
         :disabled="!canUploadFile"
+        :loading="isProcessing"
+        :aria-label="isProcessing ? 'Processing document' : 'Upload and process document'"
+        full-width
         @click="handleUpload"
-        @mouseover="($event.target as HTMLElement).style.backgroundColor = canUploadFile ? '#1A1A1A' : '#D1D5DB'"
-        @mouseout="($event.target as HTMLElement).style.backgroundColor = canUploadFile ? '#000000' : '#D1D5DB'"
+        class="mt-6"
       >
-        <div v-if="isProcessing" style="display: flex; align-items: center; gap: 8px;">
-          <div class="spinner"></div>
-          <span>Processing...</span>
-        </div>
+        <span v-if="isProcessing">Processing...</span>
         <span v-else>Upload and Process</span>
-      </button>
+      </Button>
 
-      <!-- Format Information Section -->
-      <div data-animate-child style="margin-top: 64px; padding-top: 32px; border-top: 1px solid #F5F5F5;">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-          <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background-color: #F8F9FA; border: 1px solid #E5E7EB; border-radius: 8px; transition: border-color 150ms ease-out; cursor: default;">
-            <span style="font-size: 12px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.05em;">PDF</span>
-            <span style="font-size: 12px; color: #6B7280; line-height: 1.4;">Portable Document Format</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background-color: #F8F9FA; border: 1px solid #E5E7EB; border-radius: 8px; transition: border-color 150ms ease-out; cursor: default;">
-            <span style="font-size: 12px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.05em;">TXT</span>
-            <span style="font-size: 12px; color: #6B7280; line-height: 1.4;">Plain Text</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background-color: #F8F9FA; border: 1px solid #E5E7EB; border-radius: 8px; transition: border-color 150ms ease-out; cursor: default;">
-            <span style="font-size: 12px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.05em;">DOCX</span>
-            <span style="font-size: 12px; color: #6B7280; line-height: 1.4;">Microsoft Word</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background-color: #F8F9FA; border: 1px solid #E5E7EB; border-radius: 8px; transition: border-color 150ms ease-out; cursor: default;">
-            <span style="font-size: 12px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 0.05em;">XLSX</span>
-            <span style="font-size: 12px; color: #6B7280; line-height: 1.4;">Microsoft Excel</span>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 </template>
@@ -257,12 +311,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUpload } from '@/composables/useUpload'
-import { useLoadingAnimation } from '@/composables/useLoadingAnimation'
+import { usePageEntranceAnimation } from '@/composables/usePageEntranceAnimation'
+import Button from '@/components/ui/Button.vue'
+import Card from '@/components/ui/Card.vue'
+import Skeleton from '@/components/ui/Skeleton.vue'
 
 const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
-const { isLoading: isButtonLoading, startLoading, stopLoading, animateSpinner } = useLoadingAnimation({
-  type: 'spinner',
-  duration: 800,
+
+// Setup page entrance animations
+const { getStaggerClass } = usePageEntranceAnimation({
+  baseDelay: 50,
+  staggerDelay: 60,
 })
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -423,14 +482,11 @@ async function handleUpload() {
   if (!selectedFile.value || !canUploadFile.value) return
 
   try {
-    startLoading()
     await uploadFile(selectedFile.value)
     // Navigation to results page is handled by the composable
   } catch (err) {
     // Error is handled by the composable and stored in state
     console.error('Upload failed:', err)
-  } finally {
-    stopLoading()
   }
 }
 
@@ -446,25 +502,22 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <style scoped>
-/* Spinner animation */
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #FFFFFF;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Hide scrollbar for horizontal resources list */
 .scrollable-resources::-webkit-scrollbar {
   display: none;
+}
+
+/* Screen reader only class for accessibility (Requirement 13.2) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>
 

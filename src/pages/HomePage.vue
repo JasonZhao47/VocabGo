@@ -1,46 +1,54 @@
 <template>
-  <div style="min-height: 100vh; display: flex; flex-direction: column;">
-    <!-- Hero Section with gradient mesh background -->
-    <div class="gradient-mesh theme-transition" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 24px;">
-      <div style="max-width: 1024px; margin: 0 auto; text-align: center; padding: 80px 0;">
-        <!-- Heading with gradient text hover effect -->
-        <h1 data-animate-child class="gradient-text-hover" style="font-size: 56px; line-height: 1.1; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.02em;">
+  <div class="home-page">
+    <!-- Hero Section with proper semantic HTML and ARIA (Requirement 13.2) -->
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="hero-content">
+        <!-- Main heading with stagger animation -->
+        <h1 id="hero-title" :class="getStaggerClass(0)" class="hero-title">
           VocabGo
         </h1>
         
-        <!-- Subtitle -->
-        <p data-animate-child class="theme-transition" style="font-size: 20px; line-height: 1.6; color: #6B7280; margin-bottom: 48px; max-width: 576px; margin-left: auto; margin-right: auto;">
+        <!-- Subtitle with stagger animation -->
+        <p :class="getStaggerClass(1)" class="hero-subtitle">
           Generate bilingual wordlists from your documents
         </p>
         
-        <!-- Category Cards Grid -->
-        <div data-animate-child class="category-cards-grid">
-          <CategoryCard
-            title="Upload Document"
-            description="Generate a new wordlist from your document"
-            :gradient="'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'"
-            :onClick="goToUpload"
-          />
-          <CategoryCard
-            title="Saved Wordlists"
-            description="View and manage your saved wordlists"
-            :gradient="'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'"
-            :onClick="goToWordlists"
-          />
-        </div>
+        <!-- Action Buttons with stagger animation -->
+        <nav :class="getStaggerClass(2)" class="hero-actions" aria-label="Primary navigation">
+          <Button
+            variant="primary"
+            size="lg"
+            aria-label="Navigate to upload document page"
+            @click="goToUpload"
+          >
+            Upload Document
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            aria-label="Navigate to saved wordlists page"
+            @click="goToWordlists"
+          >
+            View Saved Wordlists
+          </Button>
+        </nav>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
-
-// Lazy load CategoryCard for better initial load performance
-const CategoryCard = defineAsyncComponent(() => import('@/components/ui/CategoryCard.vue'))
+import { usePageEntranceAnimation } from '@/composables/usePageEntranceAnimation'
+import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
+
+// Setup page entrance animations
+const { getStaggerClass } = usePageEntranceAnimation({
+  baseDelay: 100,
+  staggerDelay: 80,
+})
 
 function goToUpload() {
   router.push({ name: 'upload' })
@@ -52,27 +60,123 @@ function goToWordlists() {
 </script>
 
 <style scoped>
-.category-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  max-width: 800px;
-  margin: 0 auto;
+/* Home Page Container - using 8px base unit spacing */
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(255, 255, 255);
 }
 
-/* Responsive: Single column on mobile */
+/* Hero Section - centered content with proper spacing */
+.hero-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px; /* 3 * 8px base unit */
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 96px 0; /* 12 * 8px base unit */
+}
+
+/* Hero Title - ElevenLabs typography scale (48px) */
+.hero-title {
+  font-size: 48px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: rgb(0, 0, 0);
+  margin-bottom: 16px; /* 2 * 8px base unit */
+  letter-spacing: -0.02em;
+}
+
+/* Hero Subtitle - ElevenLabs typography scale (18px base) */
+.hero-subtitle {
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 400;
+  color: rgb(115, 115, 115); /* gray-500 for secondary text */
+  margin-bottom: 48px; /* 6 * 8px base unit */
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Hero Actions - button group with proper spacing */
+.hero-actions {
+  display: flex;
+  gap: 16px; /* 2 * 8px base unit */
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive: Mobile (< 768px) */
 @media (max-width: 767px) {
-  .category-cards-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .hero-content {
+    padding: 64px 0; /* 8 * 8px base unit */
+  }
+  
+  .hero-title {
+    font-size: 32px; /* Scale down to xl size */
+  }
+  
+  .hero-subtitle {
+    font-size: 16px;
+    margin-bottom: 32px; /* 4 * 8px base unit */
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .hero-actions :deep(button) {
+    width: 100%;
   }
 }
 
-/* Tablet: 2 columns */
+/* Responsive: Tablet (768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .category-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+  .hero-content {
+    padding: 80px 0; /* 10 * 8px base unit */
+  }
+  
+  .hero-title {
+    font-size: 40px;
+  }
+}
+
+/* Smooth scroll animations for content sections */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title,
+  .hero-subtitle,
+  .hero-actions {
+    animation: fadeInUp 300ms ease-in-out;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .hero-title,
+  .hero-subtitle,
+  .hero-actions {
+    animation: none;
   }
 }
 </style>

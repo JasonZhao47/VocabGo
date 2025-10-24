@@ -2,8 +2,13 @@
   <component
     :is="tag"
     ref="cardRef"
+    :role="interactive ? 'button' : (tag === 'article' ? 'article' : undefined)"
+    :tabindex="interactive ? 0 : undefined"
+    :aria-label="ariaLabel"
     :class="cardClasses"
     @click="handleClick"
+    @keydown.enter="interactive ? handleClick : undefined"
+    @keydown.space.prevent="interactive ? handleClick : undefined"
   >
     <!-- Header Slot -->
     <div v-if="$slots.header" class="card-header">
@@ -36,6 +41,8 @@ interface Props {
   tag?: 'div' | 'article' | 'section'
   hover?: boolean
   animateOnMount?: boolean
+  borderRadius?: 'sm' | 'md'
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,7 +51,8 @@ const props = withDefaults(defineProps<Props>(), {
   padding: 'medium',
   tag: 'div',
   hover: true,
-  animateOnMount: true
+  animateOnMount: true,
+  borderRadius: 'sm'
 })
 
 const emit = defineEmits<{
@@ -101,41 +109,43 @@ const handleClick = (event: Event) => {
 const cardClasses = computed(() => {
   const baseClasses = [
     'bg-white',
-    'rounded-2xl',
-    'transition-shadow',
-    'duration-250',
-    'ease-out',
+    'transition-transform-opacity',
+    'duration-200',
+    'ease-in-out',
     'theme-transition'
   ]
 
-  // Variant classes
+  // Border radius classes - ElevenLabs uses 8px or 12px
+  const radiusClasses = {
+    sm: 'rounded-lg', // 8px
+    md: 'rounded-xl', // 12px
+  }
+
+  // Variant classes - ElevenLabs uses subtle shadows
   const variantClasses = {
     default: [
-      'shadow-sm',
       'border',
-      'border-gray-100'
+      'border-gray-200'
     ],
     outlined: [
       'border',
-      'border-gray-200',
-      'shadow-none'
+      'border-gray-300'
     ],
     elevated: [
-      'shadow-md',
-      'border-none'
+      'elevenlabs-shadow-sm'
     ],
     'gradient-border': [
       'gradient-border',
-      'shadow-sm'
+      'elevenlabs-shadow-sm'
     ]
   }
 
-  // Padding classes
+  // Padding classes - ElevenLabs uses 24px-32px for cards
   const paddingClasses = {
     none: [],
-    small: ['p-4'],
-    medium: ['p-6'],
-    large: ['p-8']
+    small: ['p-4'], // 16px
+    medium: ['p-6'], // 24px - ElevenLabs standard
+    large: ['p-8'], // 32px - ElevenLabs large
   }
 
   // Interactive classes
@@ -144,13 +154,16 @@ const cardClasses = computed(() => {
     'select-none'
   ] : []
 
-  // Hover classes - elevation effect with box-shadow
+  // Hover classes - ElevenLabs increases shadow on hover for interactive cards
+  // Add will-change hint for frequently animated elements
   const hoverClasses = (props.interactive && props.hover) ? [
-    'hover:shadow-xl',
+    'hover:elevenlabs-shadow-md',
+    'hover:will-change-transform',
   ] : []
 
   return [
     ...baseClasses,
+    radiusClasses[props.borderRadius],
     ...variantClasses[props.variant],
     ...paddingClasses[props.padding],
     ...interactiveClasses,
@@ -160,6 +173,15 @@ const cardClasses = computed(() => {
 </script>
 
 <style scoped>
+/* ElevenLabs shadow system - subtle elevation */
+.elevenlabs-shadow-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.elevenlabs-shadow-md {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 .card-header {
   @apply border-b border-gray-100 pb-4 mb-4;
 }

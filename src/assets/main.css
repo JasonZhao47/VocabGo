@@ -1,9 +1,41 @@
+/* Import ElevenLabs styles */
+@import './elevenlabs.css';
+
 /* Import gradient utilities */
 @import './gradients.css';
+
+/* Import optimized animations */
+@import './animations-optimized.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Screen reader only utility class for accessibility (Requirement 13.2) */
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
 
 
 /* ============================================
@@ -68,13 +100,17 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    /* Enable smooth momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
     @apply text-text-primary;
     background-color: var(--content-bg);
-    font-size: 16px;
+    font-size: 15px;
+    font-weight: 400;
     line-height: 1.6;
+    letter-spacing: -0.005em;
   }
 
   /* ============================================
@@ -89,10 +125,29 @@
   h6 {
     @apply font-semibold text-text-primary;
     margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
   }
 
   p {
     margin: 0;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
   }
 
   a {
@@ -202,6 +257,39 @@
     .navbar-transition {
       transition: none !important;
     }
+
+    /* Disable page entrance animations for reduced motion */
+    .page-enter-stagger {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+
+    /* Disable button press animations for reduced motion */
+    .btn:active:not(:disabled),
+    .btn-primary:hover:not(:disabled),
+    .btn-primary:active:not(:disabled),
+    .btn-primary-lg:hover:not(:disabled),
+    .btn-primary-lg:active:not(:disabled),
+    .btn-secondary:hover:not(:disabled),
+    .btn-secondary:active:not(:disabled),
+    .btn-ghost:hover:not(:disabled),
+    .btn-ghost:active:not(:disabled),
+    .btn-destructive:hover:not(:disabled),
+    .btn-destructive:active:not(:disabled) {
+      transform: none !important;
+    }
+
+    /* Disable scroll-based animations for reduced motion */
+    .scroll-fade-in {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    .parallax-element {
+      will-change: auto !important;
+    }
   }
 }
 
@@ -217,16 +305,31 @@
     @apply transition-all duration-fast;
     @apply focus-visible:outline-2 focus-visible:outline-offset-2;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    /* Button press animation */
+    transform: scale(1);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   /* Primary Button (Black) */
   .btn-primary {
     @apply btn;
     @apply bg-primary text-text-inverse;
-    @apply hover:bg-primary-hover;
     @apply focus-visible:outline-primary;
     @apply px-6 py-3;
     height: 48px;
+    transition: all 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-primary-hover;
+    transform: scale(1.02);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   .btn-primary-lg {
@@ -236,35 +339,71 @@
     font-size: 16px;
   }
 
+  .btn-primary-lg:hover:not(:disabled) {
+    @apply bg-primary-hover;
+    transform: scale(1.02);
+  }
+
+  .btn-primary-lg:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
   /* Secondary Button (Outlined) */
   .btn-secondary {
     @apply btn;
     @apply bg-background text-text-primary;
     @apply border border-border-medium;
-    @apply hover:bg-background-secondary hover:border-border-dark;
     @apply focus-visible:outline-primary;
     @apply px-6 py-3;
     height: 48px;
+    transition: all 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-background-secondary border-border-dark;
+    transform: scale(1.02);
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   /* Ghost Button (Text only) */
   .btn-ghost {
     @apply btn;
     @apply bg-transparent text-text-secondary;
-    @apply hover:text-text-primary hover:bg-background-secondary;
     @apply focus-visible:outline-primary;
     @apply px-4 py-2;
     height: 40px;
+    transition: all 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    @apply text-text-primary bg-background-secondary;
+    transform: scale(1.02);
+  }
+
+  .btn-ghost:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   /* Destructive Button */
   .btn-destructive {
     @apply btn;
     @apply bg-error text-text-inverse;
-    @apply hover:bg-error-dark;
     @apply focus-visible:outline-error;
     @apply px-6 py-3;
     height: 48px;
+    transition: all 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .btn-destructive:hover:not(:disabled) {
+    @apply bg-error-dark;
+    transform: scale(1.02);
+  }
+
+  .btn-destructive:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   /* ============================================
@@ -416,6 +555,37 @@
     animation: scaleIn 200ms ease-out;
   }
 
+  /* Page entrance animations with stagger support */
+  .page-enter-stagger {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: pageEnterStagger 400ms ease-out forwards;
+  }
+
+  .page-enter-stagger-1 {
+    animation-delay: 50ms;
+  }
+
+  .page-enter-stagger-2 {
+    animation-delay: 100ms;
+  }
+
+  .page-enter-stagger-3 {
+    animation-delay: 150ms;
+  }
+
+  .page-enter-stagger-4 {
+    animation-delay: 200ms;
+  }
+
+  .page-enter-stagger-5 {
+    animation-delay: 250ms;
+  }
+
+  .page-enter-stagger-6 {
+    animation-delay: 300ms;
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -448,6 +618,57 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  @keyframes pageEnterStagger {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes ripple {
+    from {
+      transform: scale(0);
+      opacity: 0.6;
+    }
+
+    to {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  .animate-ripple {
+    animation: ripple 300ms ease-out;
+  }
+
+  /* Scroll-based fade-in animation */
+  .scroll-fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 600ms cubic-bezier(0, 0, 0.2, 1),
+                transform 600ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .scroll-fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Parallax container */
+  .parallax-container {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .parallax-element {
+    will-change: transform;
   }
 
   /* ============================================

@@ -1,0 +1,467 @@
+/**
+ * Optimized Animation Styles
+ * 
+ * All animations use GPU-accelerated properties (transform, opacity, filter)
+ * with proper will-change hints for 60fps performance.
+ * 
+ * Requirements: 6.1, 6.2, 6.3
+ */
+
+/* ============================================
+   Will-Change Optimization Classes
+   ============================================ */
+
+/**
+ * Base class - no will-change by default
+ * Will-change should only be applied during animations
+ */
+.will-change-auto {
+  will-change: auto;
+}
+
+/**
+ * Combined transform + opacity animations
+ * Most common animation type
+ */
+.will-change-transform-opacity {
+  will-change: transform, opacity;
+}
+
+/**
+ * Transform-only animations
+ * For slides, scales, rotations
+ */
+.will-change-transform {
+  will-change: transform;
+}
+
+/**
+ * Opacity-only animations
+ * For fades
+ */
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/**
+ * Filter animations
+ * For blur effects
+ */
+.will-change-filter {
+  will-change: filter;
+}
+
+/**
+ * Force GPU layer creation
+ * Use sparingly - prefer will-change
+ */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ============================================
+   Optimized Transition Classes
+   ============================================ */
+
+/**
+ * Fast transitions (150ms) - 9 frames at 60fps
+ * Use for: hover states, small UI changes
+ */
+.transition-fast {
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Normal transitions (250ms) - 15 frames at 60fps
+ * Use for: most animations, page transitions
+ */
+.transition-normal {
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Slow transitions (400ms) - 24 frames at 60fps
+ * Use for: complex animations, modal appearances
+ */
+.transition-slow {
+  transition-duration: 400ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Transform-only transitions
+ * GPU-accelerated, no layout recalculation
+ */
+.transition-transform {
+  transition-property: transform;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Opacity-only transitions
+ * GPU-accelerated, no layout recalculation
+ */
+.transition-opacity {
+  transition-property: opacity;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Combined transform + opacity transitions
+ * Most common optimized transition
+ */
+.transition-transform-opacity {
+  transition-property: transform, opacity;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   Optimized Animation Keyframes
+   ============================================ */
+
+/**
+ * Fade in animation
+ * Uses opacity only - GPU accelerated
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/**
+ * Fade out animation
+ * Uses opacity only - GPU accelerated
+ */
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/**
+ * Slide up animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Slide down animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes slide-down {
+  from {
+    transform: translateY(-20px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Slide in from left
+ * Uses transform only - GPU accelerated
+ */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Slide in from right
+ * Uses transform only - GPU accelerated
+ */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Scale up animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes scale-up {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/**
+ * Scale down animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes scale-down {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0.95);
+  }
+}
+
+/**
+ * Combined fade + slide up
+ * Uses transform + opacity - GPU accelerated
+ */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Combined fade + scale
+ * Uses transform + opacity - GPU accelerated
+ */
+@keyframes fade-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/**
+ * Spin animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * Pulse animation
+ * Uses transform only - GPU accelerated
+ */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/**
+ * Ripple animation
+ * Uses transform + opacity - GPU accelerated
+ */
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Animation Utility Classes
+   ============================================ */
+
+.animate-fade-in {
+  animation: fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scale-up 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-scale-down {
+  animation: scale-down 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-scale {
+  animation: fade-scale 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ripple {
+  animation: ripple 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ============================================
+   Hover State Optimizations
+   ============================================ */
+
+/**
+ * Optimized hover scale
+ * Uses transform only - GPU accelerated
+ */
+.hover-scale {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/**
+ * Optimized hover lift
+ * Uses transform only - GPU accelerated
+ */
+.hover-lift {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/**
+ * Optimized hover fade
+ * Uses opacity only - GPU accelerated
+ */
+.hover-fade {
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-fade:hover {
+  opacity: 0.8;
+}
+
+/* ============================================
+   Performance Optimizations
+   ============================================ */
+
+/**
+ * Disable animations for reduced motion preference
+ * Accessibility requirement
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Remove will-change for reduced motion */
+  .will-change-transform-opacity,
+  .will-change-transform,
+  .will-change-opacity,
+  .will-change-filter {
+    will-change: auto !important;
+  }
+}
+
+/**
+ * Hardware acceleration hints
+ * Applied to frequently animated elements
+ */
+.hw-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/**
+ * Prevent layout thrashing during animations
+ */
+.no-layout-shift {
+  contain: layout;
+}
+
+/**
+ * Optimize paint performance
+ */
+.optimize-paint {
+  contain: paint;
+}
+
+/**
+ * Full containment for isolated animated components
+ */
+.contain-strict {
+  contain: strict;
+}
+
+/* ============================================
+   Debug Classes (Development Only)
+   ============================================ */
+
+/**
+ * Visualize GPU layers (development only)
+ * Shows which elements are on their own layer
+ */
+.debug-gpu-layers * {
+  outline: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+/**
+ * Slow down animations for debugging
+ */
+.debug-slow-animations * {
+  animation-duration: 3s !important;
+  transition-duration: 3s !important;
+}

@@ -1,5 +1,14 @@
 <template>
   <div id="app" class="min-h-screen bg-background">
+    <!-- Skip to content link for keyboard navigation (Requirements: 13.1, 13.4) -->
+    <a
+      href="#main-content"
+      class="skip-to-content"
+      @click="skipToContent"
+    >
+      Skip to main content
+    </a>
+    
     <!-- Sidebar navigation (hidden for student view) -->
     <Sidebar
       v-if="!isStudentView"
@@ -24,7 +33,7 @@
     <!-- Main layout with sidebar and navbar offset -->
     <div :class="['app-layout', { 'app-layout--collapsed': sidebarCollapsed, 'app-layout--fullscreen': isStudentView }]">
       <!-- Main content -->
-      <main id="main-content" tabindex="-1" class="app-content focus:outline-none">
+      <main id="main-content" tabindex="-1" class="app-content">
         <router-view v-slot="{ Component, route }">
           <transition
             :css="false"
@@ -151,6 +160,16 @@ const toggleDesktopSidebar = () => {
   toggleSidebar()
 }
 
+// Skip to content functionality (Requirements: 13.1, 13.4)
+const skipToContent = (event: Event) => {
+  event.preventDefault()
+  const mainContent = document.getElementById('main-content')
+  if (mainContent) {
+    mainContent.focus()
+    mainContent.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
 // Transition handlers
 const onEnter = (el: Element, done: () => void) => {
   enter(el, done)
@@ -210,12 +229,41 @@ const onLeave = (el: Element, done: () => void) => {
   min-height: 100vh;
 }
 
+/* Skip to content link - visible only on keyboard focus (Requirements: 13.1, 13.4) */
+.skip-to-content {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.skip-to-content:focus {
+  top: 16px;
+  outline: 2px solid rgb(255, 255, 255);
+  outline-offset: 2px;
+}
+
 /* Main content area */
 .app-content {
   /* White background to match sidebar */
   background: #FFFFFF;
   min-height: calc(100vh - 64px);
   padding: 24px;
+}
+
+/* Focus styles for main content when skipped to */
+.app-content:focus {
+  outline: none;
 }
 
 /* Remove padding for fullscreen student view */

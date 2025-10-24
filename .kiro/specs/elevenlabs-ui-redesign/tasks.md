@@ -257,20 +257,52 @@ This implementation plan transforms VocabGo into a premium, modern application i
     - Verify max-width 700px constraint on content-focused pages
     - _Requirements: 4.1, 4.2, 7.1_
 
-- [ ] 14. Polish micro-interactions and transitions
-  - [ ] 14.1 Add staggered entrance animations to page content
+- [x] 14. Refine typography to match ElevenLabs standards
+  - [x] 14.1 Apply ElevenLabs-inspired font sizing and hierarchy
+    - Reduce base font size from 16px to 15px for cleaner look
+    - Set H1 headings to 32px with font-weight 600
+    - Set H2 headings to 24px with font-weight 600
+    - Set H3 headings to 18px with font-weight 600
+    - Adjust subtitle text to 16px with line-height 1.6
+    - _Requirements: 1.1, 1.2, 8.1_
+  
+  - [x] 14.2 Implement modern letter-spacing and line-height
+    - Apply -0.02em letter-spacing to all headings for tighter, modern look
+    - Apply -0.005em letter-spacing to body text for subtle refinement
+    - Apply -0.01em letter-spacing to buttons and emphasized text
+    - Set uppercase labels to 0.08em letter-spacing for readability
+    - Set body text line-height to 1.6 for comfortable reading
+    - Set heading line-height to 1.2 for visual impact
+    - _Requirements: 1.1, 1.2, 8.1_
+  
+  - [x] 14.3 Update page-specific typography
+    - HomePage: Refine hero heading (56px) and subtitle spacing
+    - UploadPage: Clean header typography and resource card text
+    - SavedWordlistsPage: Polish table typography and modal text
+    - Apply consistent font-weight (600 for emphasis, 400 for body)
+    - _Requirements: 2.1, 3.1, 6.1, 1.1_
+  
+  - [x] 14.4 Update global CSS typography defaults
+    - Set body font-size to 15px with letter-spacing -0.005em
+    - Add default letter-spacing to heading elements
+    - Improve paragraph line-height and spacing defaults
+    - Ensure consistent typography across all components
+    - _Requirements: 1.1, 1.2, 8.1_
+
+- [x] 15. Polish micro-interactions and transitions
+  - [x] 15.1 Add staggered entrance animations to page content
     - Implement page-enter-stagger classes for sequential element reveals
     - Add fade-in animations with proper timing
     - Ensure animations respect prefers-reduced-motion
     - _Requirements: 8.1, 8.2, 2.1_
   
-  - [ ] 14.2 Enhance button press animations
+  - [x] 15.2 Enhance button press animations
     - Add subtle scale-down effect on button press (active state)
     - Implement smooth color transitions on hover
     - Ensure all buttons have consistent interaction feedback
     - _Requirements: 8.1, 8.2, 2.2_
   
-  - [ ] 14.3 Add scroll-based animations (optional enhancement)
+  - [x] 15.3 Add scroll-based animations (optional enhancement)
     - Implement subtle fade-in on scroll for long pages
     - Add parallax effects for hero sections (if desired)
     - Ensure smooth scroll behavior

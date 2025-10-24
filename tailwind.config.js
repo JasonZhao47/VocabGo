@@ -1,15 +1,55 @@
+import { elevenlabsTokens } from './src/config/elevenlabsDesignTokens.ts';
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Content paths for Tailwind CSS purge
+  // Ensures unused styles are removed in production
   content: [
     './index.html',
-    './src/**/*.{vue,ts,tsx}'
+    './src/**/*.{vue,js,ts,jsx,tsx}',
+    './src/**/*.vue',
+    './src/**/*.ts',
+  ],
+  
+  // Safelist patterns to prevent purging of dynamically generated classes
+  safelist: [
+    // Animation classes that might be added dynamically
+    'animate-fade-in',
+    'animate-fade-out',
+    'animate-slide-up',
+    'animate-slide-down',
+    'animate-scale-in',
+    'animate-spin',
+    'animate-pulse',
+    // Gradient classes
+    'gradient-border',
+    'gradient-text',
+    // Will-change optimization classes
+    'will-change-transform',
+    'will-change-opacity',
+    'will-change-transform-opacity',
+    // GPU acceleration
+    'gpu-accelerated',
   ],
   theme: {
     extend: {
       // ============================================
+      // ELEVENLABS DESIGN TOKENS
+      // ============================================
+      fontFamily: {
+        sans: elevenlabsTokens.typography.fontFamily.primary.split(',').map(f => f.trim()),
+        elevenlabs: elevenlabsTokens.typography.fontFamily.primary.split(',').map(f => f.trim()),
+      },
+      
+      // ============================================
       // COLOR PALETTE (ElevenLabs-inspired)
       // ============================================
       colors: {
+        // ElevenLabs core colors
+        'elevenlabs-white': elevenlabsTokens.colors.white,
+        'elevenlabs-black': elevenlabsTokens.colors.black,
+        'elevenlabs-gray': elevenlabsTokens.colors.gray,
+        'elevenlabs-red': elevenlabsTokens.colors.red,
         // Primary Brand (Black for ElevenLabs aesthetic)
         primary: {
           DEFAULT: '#000000',
@@ -78,9 +118,17 @@ export default {
       },
       
       // ============================================
-      // TYPOGRAPHY SCALE
+      // TYPOGRAPHY SCALE (ElevenLabs + Extended)
       // ============================================
       fontSize: {
+        // ElevenLabs core sizes
+        'elevenlabs-xs': [elevenlabsTokens.typography.fontSize.xs, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
+        'elevenlabs-sm': [elevenlabsTokens.typography.fontSize.sm, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
+        'elevenlabs-base': [elevenlabsTokens.typography.fontSize.base, { lineHeight: elevenlabsTokens.typography.lineHeight.relaxed }],
+        'elevenlabs-lg': [elevenlabsTokens.typography.fontSize.lg, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
+        'elevenlabs-xl': [elevenlabsTokens.typography.fontSize.xl, { lineHeight: elevenlabsTokens.typography.lineHeight.tight }],
+        'elevenlabs-2xl': [elevenlabsTokens.typography.fontSize['2xl'], { lineHeight: elevenlabsTokens.typography.lineHeight.tight }],
+        
         // Display (Hero headings)
         'display-lg': ['64px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
         'display': ['56px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
@@ -107,18 +155,38 @@ export default {
         'label-sm': ['12px', { lineHeight: '1.4', fontWeight: '500' }],
       },
       
-      // Font Weights
+      // Font Weights (ElevenLabs + Extended)
       fontWeight: {
-        normal: '400',
+        normal: elevenlabsTokens.typography.fontWeight.normal,
         medium: '500',
         semibold: '600',
-        bold: '700',
+        bold: elevenlabsTokens.typography.fontWeight.bold,
+        'elevenlabs-normal': elevenlabsTokens.typography.fontWeight.normal,
+        'elevenlabs-bold': elevenlabsTokens.typography.fontWeight.bold,
+      },
+      
+      // Line Heights (ElevenLabs)
+      lineHeight: {
+        'elevenlabs-tight': elevenlabsTokens.typography.lineHeight.tight,
+        'elevenlabs-normal': elevenlabsTokens.typography.lineHeight.normal,
+        'elevenlabs-relaxed': elevenlabsTokens.typography.lineHeight.relaxed,
       },
       
       // ============================================
-      // SPACING SCALE (8px base unit)
+      // SPACING SCALE (ElevenLabs 8px base unit + Extended)
       // ============================================
       spacing: {
+        // ElevenLabs core spacing
+        'elevenlabs-0': elevenlabsTokens.spacing[0],
+        'elevenlabs-1': elevenlabsTokens.spacing[1],
+        'elevenlabs-2': elevenlabsTokens.spacing[2],
+        'elevenlabs-3': elevenlabsTokens.spacing[3],
+        'elevenlabs-4': elevenlabsTokens.spacing[4],
+        'elevenlabs-6': elevenlabsTokens.spacing[6],
+        'elevenlabs-8': elevenlabsTokens.spacing[8],
+        'elevenlabs-12': elevenlabsTokens.spacing[12],
+        
+        // Extended spacing scale
         '0': '0px',
         '1': '4px',
         '2': '8px',
@@ -141,10 +209,13 @@ export default {
       },
       
       // ============================================
-      // BORDER RADIUS
+      // BORDER RADIUS (ElevenLabs + Extended)
       // ============================================
       borderRadius: {
         'none': '0',
+        'elevenlabs-sm': elevenlabsTokens.borderRadius.sm,
+        'elevenlabs-md': elevenlabsTokens.borderRadius.md,
+        'elevenlabs-full': elevenlabsTokens.borderRadius.full,
         'sm': '6px',
         'DEFAULT': '8px',
         'md': '12px',
@@ -155,9 +226,12 @@ export default {
       },
       
       // ============================================
-      // BOX SHADOWS
+      // BOX SHADOWS (ElevenLabs + Extended)
       // ============================================
       boxShadow: {
+        'elevenlabs-sm': elevenlabsTokens.shadows.sm,
+        'elevenlabs-md': elevenlabsTokens.shadows.md,
+        'elevenlabs-lg': elevenlabsTokens.shadows.lg,
         'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'sm': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
         'DEFAULT': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
@@ -169,9 +243,12 @@ export default {
       },
       
       // ============================================
-      // TRANSITIONS & ANIMATIONS
+      // TRANSITIONS & ANIMATIONS (ElevenLabs + Extended)
       // ============================================
       transitionDuration: {
+        'elevenlabs-fast': elevenlabsTokens.transitions.fast,
+        'elevenlabs-normal': elevenlabsTokens.transitions.normal,
+        'elevenlabs-slow': elevenlabsTokens.transitions.slow,
         'instant': '0ms',
         'fast': '150ms',
         'DEFAULT': '200ms',
@@ -181,6 +258,7 @@ export default {
       },
       
       transitionTimingFunction: {
+        'elevenlabs': elevenlabsTokens.transitions.easing,
         'ease-out': 'cubic-bezier(0, 0, 0.2, 1)',
         'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
         'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -287,6 +365,15 @@ export default {
         'spin': 'spin 1s linear infinite',
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'bounce': 'bounce 1s infinite',
+      },
+      
+      // ============================================
+      // OPTIMIZED TRANSITION PROPERTIES
+      // ============================================
+      transitionProperty: {
+        'transform-opacity': 'transform, opacity',
+        'transform': 'transform',
+        'opacity': 'opacity',
       },
       
       // ============================================

@@ -4,13 +4,24 @@
     ref="buttonRef"
     :type="tag === 'button' ? type : undefined"
     :disabled="disabled || loading"
+    :aria-busy="loading"
+    :aria-disabled="disabled || loading"
+    :aria-label="ariaLabel"
     :class="buttonClasses"
     v-bind="$attrs"
+    @click="handleClick"
   >
+    <!-- Ripple effect container -->
+    <span
+      v-if="ripple && rippleActive"
+      :style="rippleStyle"
+      class="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
+    />
+    
     <!-- Loading spinner -->
     <svg
       v-if="loading"
-      class="animate-spin -ml-1 mr-2 h-5 w-5"
+      class="animate-spin -ml-1 mr-2 h-5 w-5 relative z-10"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -31,26 +42,24 @@
     </svg>
     
     <!-- Icon (left) -->
-    <span v-if="$slots.icon" class="mr-2">
+    <span v-if="$slots.icon" class="mr-2 relative z-10">
       <slot name="icon" />
     </span>
     
     <!-- Button text -->
-    <slot />
+    <span class="relative z-10">
+      <slot />
+    </span>
     
     <!-- Icon (right) -->
-    <span v-if="$slots.iconRight" class="ml-2">
+    <span v-if="$slots.iconRight" class="ml-2 relative z-10">
       <slot name="iconRight" />
     </span>
   </component>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useInteractiveAnimation } from '@/composables/useInteractiveAnimation'
-import { animationConfig } from '@/config/animations'
-import gsap from 'gsap'
-import { useMotionPreference } from '@/composables/useMotionPreference'
+import { computed, ref } from 'vue'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -60,6 +69,8 @@ interface Props {
   fullWidth?: boolean
   tag?: 'button' | 'a'
   type?: 'button' | 'submit' | 'reset'
+  ripple?: boolean
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -70,82 +81,114 @@ const props = withDefaults(defineProps<Props>(), {
   fullWidth: false,
   tag: 'button',
   type: 'button',
+  ripple: false,
 })
 
 const buttonRef = ref<HTMLElement | null>(null)
-const { getDuration } = useMotionPreference()
+const rippleActive = ref(false)
+const rippleStyle = ref({})
 
-// Apply interactive animations only when not disabled or loading
-const shouldApplyAnimation = computed(() => !props.disabled && !props.loading)
-
-// Initialize interactive animation
-const { isHovered, isActive } = useInteractiveAnimation(buttonRef, {
-  hoverScale: animationConfig.scale.hover,
-  activeScale: animationConfig.scale.active,
-  duration: animationConfig.duration.fast,
-})
-
-// Handle disabled state opacity transition
-watch(() => props.disabled, (isDisabled) => {
-  if (!buttonRef.value) return
-  
-  gsap.to(buttonRef.value, {
-    opacity: isDisabled ? 0.5 : 1,
-    duration: getDuration(animationConfig.duration.normal) / 1000,
-    ease: animationConfig.easing.easeOut,
-  })
-})
-
-// Handle loading state - reset scale when loading starts
-watch(() => props.loading, (isLoading) => {
-  if (!buttonRef.value) return
-  
-  if (isLoading) {
-    gsap.to(buttonRef.value, {
-      scale: 1,
-      duration: getDuration(animationConfig.duration.fast) / 1000,
-      ease: animationConfig.easing.easeOut,
-    })
+const handleClick = (event: MouseEvent) => {
+  if (props.ripple && !props.disabled && !props.loading && buttonRef.value) {
+    const button = buttonRef.value
+    const rect = button.getBoundingClientRect()
+    const size = Math.max(rect.width, rect.height)
+    const x = event.clientX - rect.left - size / 2
+    const y = event.clientY - rect.top - size / 2
+    
+    rippleStyle.value = {
+      width: `${size}px`,
+      height: `${size}px`,
+      left: `${x}px`,
+      top: `${y}px`,
+    }
+    
+    rippleActive.value = true
+    
+    setTimeout(() => {
+      rippleActive.value = false
+    }, 300)
   }
-})
+}
 
 const buttonClasses = computed(() => {
-  const classes = []
+  const classes: string[] = []
   
-  // Base button class
-  classes.push('btn')
+  // Base styles - inline flex, items center, justify center
+  classes.push('inline-flex', 'items-center', 'justify-center')
   
-  // Variant classes
+  // Position relative for ripple effect
+  classes.push('relative', 'overflow-hidden')
+  
+  // Font styling - 14px font size, normal weight
+  classes.push('text-sm', 'font-normal')
+  
+  // Border radius - full rounded (9999px)
+  classes.push('rounded-full')
+  
+  // Transitions - optimized for GPU acceleration (transform + opacity only)
+  classes.push('transition-transform-opacity', 'duration-200', 'ease-in-out')
+  
+  // Micro-interactions - subtle scale on hover with will-change hint
+  if (!props.disabled && !props.loading) {
+    classes.push('hover:scale-[1.02]', 'hover:will-change-transform')
+  }
+  
+  // Focus visible styles
+  classes.push('focus-visible:outline-2', 'focus-visible:outline-offset-2')
+  
+  // Disabled state
+  classes.push('disabled:opacity-50', 'disabled:cursor-not-allowed')
+  
+  // Variant-specific styles
   switch (props.variant) {
     case 'primary':
-      classes.push('btn-primary')
+      classes.push('bg-black', 'text-white')
+      if (!props.disabled && !props.loading) {
+        classes.push('hover:opacity-90', 'active:opacity-80', 'active:scale-[0.98]')
+      }
+      classes.push('focus-visible:outline-black')
       break
     case 'secondary':
-      classes.push('btn-secondary')
+      classes.push('bg-[rgb(242,242,242)]', 'text-black')
+      if (!props.disabled && !props.loading) {
+        classes.push('hover:bg-[rgb(229,229,229)]', 'active:bg-[rgb(212,212,212)]', 'active:scale-[0.98]')
+      }
+      classes.push('focus-visible:outline-black')
       break
     case 'ghost':
-      classes.push('btn-ghost')
+      classes.push('bg-transparent', 'text-black')
+      if (!props.disabled && !props.loading) {
+        classes.push('hover:bg-[rgb(242,242,242)]', 'active:bg-[rgb(229,229,229)]', 'active:scale-[0.98]')
+      }
+      classes.push('focus-visible:outline-black')
       break
     case 'destructive':
-      classes.push('btn-destructive')
+      classes.push('bg-[rgb(239,68,68)]', 'text-white')
+      if (!props.disabled && !props.loading) {
+        classes.push('hover:opacity-90', 'active:opacity-80', 'active:scale-[0.98]')
+      }
+      classes.push('focus-visible:outline-[rgb(239,68,68)]')
       break
   }
   
-  // Size classes
-  if (props.size === 'lg' && props.variant === 'primary') {
-    classes.push('btn-primary-lg')
+  // Size-specific styles
+  switch (props.size) {
+    case 'sm':
+      classes.push('px-3', 'py-1.5', 'h-8')
+      break
+    case 'md':
+      classes.push('px-4', 'py-2', 'h-10')
+      break
+    case 'lg':
+      classes.push('px-6', 'py-3', 'h-12')
+      break
   }
   
   // Full width
   if (props.fullWidth) {
     classes.push('w-full')
   }
-  
-  // Add transition class for smooth state changes
-  classes.push('transition-opacity')
-  
-  // Add theme transition class for color changes
-  classes.push('theme-transition')
   
   return classes.join(' ')
 })

@@ -189,22 +189,18 @@ function getDocumentType(filename: string): string {
 <style scoped>
 /* Mobile-first Responsive Design (Task 8.3) */
 
-/* Page Container - Mobile (0-767px) */
+/* Page Container - ElevenLabs exact: 752px max-width, 48px horizontal, 64px top */
 .result-page {
-  max-width: 900px;
+  max-width: 752px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 64px 48px 48px;
+  background-color: #F9FAFB;
+  min-height: 100vh;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .result-page {
-    padding: 32px 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .result-page {
-    padding: 48px 32px;
+    padding: 48px 24px 32px;
   }
 }
 
@@ -235,24 +231,12 @@ function getDocumentType(filename: string): string {
 }
 
 .result-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: 600;
   color: #000000;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.2;
-}
-
-@media (min-width: 768px) {
-  .result-title {
-    font-size: 28px;
-    margin-bottom: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .result-title {
-    font-size: 32px;
-  }
+  letter-spacing: 0;
 }
 
 .result-metadata {
@@ -270,15 +254,10 @@ function getDocumentType(filename: string): string {
 
 .result-filename {
   font-size: 14px;
-  font-weight: 500;
-  color: #000000;
+  font-weight: 400;
+  color: #6B7280;
   word-break: break-word;
-}
-
-@media (min-width: 768px) {
-  .result-filename {
-    font-size: 15px;
-  }
+  letter-spacing: 0;
 }
 
 .result-badge {
@@ -287,16 +266,11 @@ function getDocumentType(filename: string): string {
   padding: 4px 12px;
   background-color: #000000;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: 9999px;
   white-space: nowrap;
-}
-
-@media (min-width: 768px) {
-  .result-badge {
-    font-size: 12px;
-  }
+  letter-spacing: 0;
 }
 
 /* Table Container with Horizontal Scroll (Task 8.3) */
@@ -331,15 +305,10 @@ function getDocumentType(filename: string): string {
 .table-wrapper {
   background-color: #ffffff;
   border-radius: 12px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid #E5E7EB;
   overflow: hidden;
   min-width: 100%;
-}
-
-@media (min-width: 768px) {
-  .table-wrapper {
-    border-radius: 16px;
-  }
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* Table Styles - Responsive (Task 8.3) */
@@ -421,24 +390,14 @@ function getDocumentType(filename: string): string {
   font-size: 14px;
   font-weight: 500;
   color: #000000;
-}
-
-@media (min-width: 768px) {
-  .table-cell-english {
-    font-size: 15px;
-  }
+  letter-spacing: 0;
 }
 
 .table-cell-mandarin {
   font-size: 14px;
   font-weight: 400;
-  color: #1a1a1a;
-}
-
-@media (min-width: 768px) {
-  .table-cell-mandarin {
-    font-size: 15px;
-  }
+  color: #6B7280;
+  letter-spacing: 0;
 }
 
 /* Empty State - Responsive (Task 8.3) */
@@ -514,22 +473,20 @@ function getDocumentType(filename: string): string {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 48px;
-  padding: 0 24px;
+  height: 40px;
+  padding: 0 20px;
   font-size: 14px;
-  font-weight: 600;
-  border-radius: 9999px;
+  font-weight: 500;
+  border-radius: 8px;
   transition: all 150ms ease-out;
   cursor: pointer;
-  min-width: 100%; /* Full width on mobile (Task 8.3) */
-  min-height: 44px; /* Touch-friendly (Task 8.3) */
+  letter-spacing: 0;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .action-button {
-    height: 44px;
-    min-width: auto;
-    width: auto;
+    width: 100%;
+    min-height: 44px;
   }
 }
 

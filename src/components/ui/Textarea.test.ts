@@ -60,7 +60,7 @@ describe('Textarea Component Animations', () => {
     })
 
     const textarea = wrapper.find('textarea')
-    expect(textarea.classes()).toContain('border-red-300')
+    expect(textarea.classes()).toContain('border-red-500')
     expect(wrapper.text()).toContain('This field is required')
   })
 
@@ -73,7 +73,7 @@ describe('Textarea Component Animations', () => {
     })
 
     const textarea = wrapper.find('textarea')
-    expect(textarea.classes()).toContain('border-green-300')
+    expect(textarea.classes()).toContain('border-green-500')
   })
 
   it('shows success indicator when success prop is true', () => {
@@ -98,7 +98,7 @@ describe('Textarea Component Animations', () => {
     })
 
     const textarea = wrapper.find('textarea')
-    expect(textarea.classes()).toContain('bg-gray-100')
+    expect(textarea.classes()).toContain('opacity-50')
     expect(textarea.classes()).toContain('cursor-not-allowed')
     expect(textarea.attributes('disabled')).toBeDefined()
   })
@@ -128,8 +128,8 @@ describe('Textarea Component Animations', () => {
     await textarea.trigger('focus')
     await nextTick()
 
-    // Check for shadow class (glow effect)
-    expect(textarea.classes().some(c => c.includes('shadow'))).toBe(true)
+    // Check for ring class (focus ring effect)
+    expect(textarea.classes().some(c => c.includes('ring'))).toBe(true)
   })
 
   it('shows character count when maxLength is provided', () => {

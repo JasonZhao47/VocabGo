@@ -83,6 +83,7 @@ import gsap from 'gsap'
 import { useModalAnimation } from '@/composables/useModalAnimation'
 import { animationConfig } from '@/config/animations'
 import { useMotionPreference } from '@/composables/useMotionPreference'
+import { useFocusTrap, getFocusableElements } from '@/composables/useKeyboardNavigation'
 
 interface Props {
   modelValue: boolean
@@ -116,11 +117,17 @@ const emit = defineEmits<{
 const modalRef = ref<HTMLElement>()
 const modalContentRef = ref<HTMLElement>()
 const backdropRef = ref<HTMLElement>()
-const previousActiveElement = ref<HTMLElement>()
+const isActive = ref(false)
 
 // Initialize modal animation composable
 const modalAnimation = useModalAnimation({ duration: 300, backdropBlur: true })
 const { shouldAnimate, getDuration } = useMotionPreference()
+
+// Initialize focus trap (Requirements: 13.1, 13.4)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap({
+  element: modalContentRef,
+  active: isActive,
+})
 
 // Generate unique IDs for accessibility
 const titleId = computed(() => `modal-title-${Math.random().toString(36).substr(2, 9)}`)
@@ -171,38 +178,12 @@ const handleEscape = () => {
   }
 }
 
-// Focus management
-const trapFocus = (event: KeyboardEvent) => {
-  if (!modalContentRef.value || event.key !== 'Tab') return
-
-  const focusableElements = modalContentRef.value.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  )
-  
-  const firstElement = focusableElements[0] as HTMLElement
-  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
-
-  if (event.shiftKey) {
-    if (document.activeElement === firstElement) {
-      event.preventDefault()
-      lastElement?.focus()
-    }
-  } else {
-    if (document.activeElement === lastElement) {
-      event.preventDefault()
-      firstElement?.focus()
-    }
-  }
-}
-
+// Focus management (Requirements: 13.1, 13.4)
 const setInitialFocus = async () => {
   await nextTick()
   if (modalContentRef.value) {
-    const focusableElement = modalContentRef.value.querySelector(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    ) as HTMLElement
-    
-    focusableElement?.focus()
+    const focusableElements = getFocusableElements(modalContentRef.value)
+    focusableElements[0]?.focus()
   }
 }
 
@@ -225,9 +206,11 @@ const animateModalContent = () => {
 // Transition handlers
 const onEnter = () => {
   emit('before-open')
-  previousActiveElement.value = document.activeElement as HTMLElement
+  isActive.value = true
   document.body.style.overflow = 'hidden'
-  document.addEventListener('keydown', trapFocus)
+  
+  // Activate focus trap
+  activateFocusTrap()
   
   // Trigger modal animation
   if (modalContentRef.value && backdropRef.value) {
@@ -243,13 +226,15 @@ const onAfterEnter = () => {
 
 const onLeave = () => {
   emit('before-close')
+  isActive.value = false
 }
 
 const onAfterLeave = () => {
   emit('after-close')
   document.body.style.overflow = ''
-  document.removeEventListener('keydown', trapFocus)
-  previousActiveElement.value?.focus()
+  
+  // Deactivate focus trap (restores previous focus)
+  deactivateFocusTrap()
 }
 
 // Watch for model value changes
@@ -262,7 +247,7 @@ watch(() => props.modelValue, (newValue) => {
 // Cleanup on unmount
 onUnmounted(() => {
   document.body.style.overflow = ''
-  document.removeEventListener('keydown', trapFocus)
+  isActive.value = false
 })
 </script>
 
@@ -281,7 +266,7 @@ onUnmounted(() => {
   padding: 1rem;
 }
 
-/* Modal backdrop - dark overlay */
+/* Modal backdrop - dark overlay with smooth opacity transition */
 .modal-backdrop {
   position: absolute;
   top: 0;
@@ -290,42 +275,44 @@ onUnmounted(() => {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Modal card - the white content box */
+/* Modal card - the white content box with ElevenLabs styling */
 .modal-card {
   position: relative;
   z-index: 10;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  background: rgb(255, 255, 255);
+  border-radius: 12px; /* 12px border radius per requirements */
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
   max-height: 90vh;
   overflow: auto;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 640px; /* Wider like ElevenLabs */
-  padding: 2rem; /* More padding */
+  max-width: 640px;
+  padding: 32px; /* 32px padding using spacing scale */
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); /* 300ms smooth fade-in */
 }
 
 .modal-header {
   @apply mb-4 flex-shrink-0;
-  /* Remove padding since card has padding, remove border for cleaner look */
 }
 
 .modal-content {
   @apply flex-1;
-  /* Remove padding since card has padding now */
 }
 
 .modal-footer {
-  @apply px-6 py-4 border-t border-gray-100 flex-shrink-0;
+  @apply mt-6 flex-shrink-0;
+  padding-top: 24px;
+  border-top: 1px solid rgb(242, 242, 242);
 }
 
-/* Transition styles */
+/* Transition styles with 300ms duration and smooth easing */
 .modal-enter-active,
 .modal-leave-active {
-  transition: all 0.25s ease-out;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-enter-from,
@@ -333,13 +320,30 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.modal-enter-from .relative,
-.modal-leave-to .relative {
+.modal-enter-active .modal-backdrop,
+.modal-leave-active .modal-backdrop {
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-enter-from .modal-backdrop,
+.modal-leave-to .modal-backdrop {
+  opacity: 0;
+}
+
+.modal-enter-active .modal-card,
+.modal-leave-active .modal-card {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-enter-from .modal-card,
+.modal-leave-to .modal-card {
+  opacity: 0;
   transform: scale(0.95) translateY(-10px);
 }
 
-.modal-enter-to .relative,
-.modal-leave-from .relative {
+.modal-enter-to .modal-card,
+.modal-leave-from .modal-card {
+  opacity: 1;
   transform: scale(1) translateY(0);
 }
 </style>

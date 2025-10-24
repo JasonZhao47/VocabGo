@@ -160,59 +160,56 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ElevenLabs-styled Toast Container */
 .toast-container {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 24px; /* 3 spacing units */
+  right: 24px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 24rem;
+  gap: 16px; /* 2 spacing units */
+  max-width: 400px;
   pointer-events: none;
 }
 
 .toast {
   position: relative;
   overflow: hidden;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background-color: rgb(255, 255, 255);
+  border-radius: 8px; /* ElevenLabs sm border radius */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* ElevenLabs md shadow */
   pointer-events: auto;
   cursor: pointer;
-  border-left: 4px solid;
+  border: 1px solid rgb(229, 229, 229); /* gray-300 */
   will-change: transform, opacity;
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1); /* ElevenLabs normal transition */
 }
 
 .toast-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  transition: transform 0.15s ease;
-}
-
-.toast:hover .toast-content {
-  transform: translateX(-4px);
+  gap: 16px; /* 2 spacing units */
+  padding: 16px; /* 2 spacing units */
 }
 
 .toast:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* ElevenLabs lg shadow */
 }
 
+/* Success variant - subtle green accent */
 .toast-success {
-  border-left-color: #10b981;
-  background-color: #f0fdf4;
+  border-left: 3px solid rgb(34, 197, 94); /* green-500 */
 }
 
+/* Error variant - subtle red accent */
 .toast-error {
-  border-left-color: #ef4444;
-  background-color: #fef2f2;
+  border-left: 3px solid rgb(239, 68, 68); /* red-500 */
 }
 
+/* Info variant - subtle black accent */
 .toast-info {
-  border-left-color: #3b82f6;
-  background-color: #eff6ff;
+  border-left: 3px solid rgb(0, 0, 0); /* black */
 }
 
 .toast-icon {
@@ -220,52 +217,53 @@ onBeforeUnmount(() => {
 }
 
 .toast-success .icon {
-  color: #10b981;
+  color: rgb(34, 197, 94); /* green-500 */
 }
 
 .toast-error .icon {
-  color: #ef4444;
+  color: rgb(239, 68, 68); /* red-500 */
 }
 
 .toast-info .icon {
-  color: #3b82f6;
+  color: rgb(0, 0, 0); /* black */
 }
 
 .icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 20px;
+  height: 20px;
 }
 
 .icon-small {
-  width: 1rem;
-  height: 1rem;
+  width: 16px;
+  height: 16px;
 }
 
 .toast-message {
   flex: 1;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: #374151;
+  font-size: 14px; /* ElevenLabs sm font size */
+  line-height: 1.4; /* ElevenLabs normal line height */
+  color: rgb(0, 0, 0); /* black */
+  font-weight: 400; /* normal */
 }
 
 .toast-close {
   flex-shrink: 0;
-  padding: 0.25rem;
+  padding: 4px;
   background: transparent;
   border: none;
-  border-radius: 0.25rem;
-  color: #6b7280;
+  border-radius: 4px;
+  color: rgb(115, 115, 115); /* gray-500 */
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); /* ElevenLabs fast transition */
 }
 
 .toast-close:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #374151;
+  background-color: rgb(242, 242, 242); /* gray-200 */
+  color: rgb(0, 0, 0); /* black */
 }
 
-.toast-close:focus {
-  outline: 2px solid currentColor;
+.toast-close:focus-visible {
+  outline: 2px solid rgb(0, 0, 0);
   outline-offset: 2px;
 }
 
@@ -275,8 +273,8 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background-color: rgba(0, 0, 0, 0.05);
+  height: 2px;
+  background-color: rgb(242, 242, 242); /* gray-200 */
   overflow: hidden;
 }
 
@@ -287,20 +285,20 @@ onBeforeUnmount(() => {
 }
 
 .toast-progress-success {
-  background-color: #10b981;
+  background-color: rgb(34, 197, 94); /* green-500 */
 }
 
 .toast-progress-error {
-  background-color: #ef4444;
+  background-color: rgb(239, 68, 68); /* red-500 */
 }
 
 .toast-progress-info {
-  background-color: #3b82f6;
+  background-color: rgb(0, 0, 0); /* black */
 }
 
 /* Smooth position transitions for stacking */
 .toast-move {
-  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1); /* ElevenLabs normal transition */
 }
 
 /* Reduced motion support */
@@ -317,19 +315,22 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 640px) {
+/* Mobile responsive */
+@media (max-width: 768px) {
   .toast-container {
-    left: 1rem;
-    right: 1rem;
+    left: 16px; /* 2 spacing units */
+    right: 16px;
+    top: 16px;
     max-width: none;
   }
   
   .toast-content {
-    padding: 0.75rem;
+    padding: 12px; /* 1.5 spacing units */
+    gap: 12px;
   }
   
   .toast-message {
-    font-size: 0.8125rem;
+    font-size: 14px; /* Keep same size on mobile */
   }
 }
 </style>

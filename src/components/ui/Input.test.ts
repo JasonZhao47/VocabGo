@@ -60,7 +60,7 @@ describe('Input Component Animations', () => {
     })
 
     const input = wrapper.find('input')
-    expect(input.classes()).toContain('border-red-300')
+    expect(input.classes()).toContain('border-red-500')
     expect(wrapper.text()).toContain('This field is required')
   })
 
@@ -73,7 +73,7 @@ describe('Input Component Animations', () => {
     })
 
     const input = wrapper.find('input')
-    expect(input.classes()).toContain('border-green-300')
+    expect(input.classes()).toContain('border-green-500')
   })
 
   it('shows success indicator when success prop is true', () => {
@@ -98,7 +98,7 @@ describe('Input Component Animations', () => {
     })
 
     const input = wrapper.find('input')
-    expect(input.classes()).toContain('bg-gray-100')
+    expect(input.classes()).toContain('opacity-50')
     expect(input.classes()).toContain('cursor-not-allowed')
     expect(input.attributes('disabled')).toBeDefined()
   })
@@ -128,8 +128,8 @@ describe('Input Component Animations', () => {
     await input.trigger('focus')
     await nextTick()
 
-    // Check for shadow class (glow effect)
-    expect(input.classes().some(c => c.includes('shadow'))).toBe(true)
+    // Check for ring class (focus ring effect)
+    expect(input.classes().some(c => c.includes('ring'))).toBe(true)
   })
 
   it('shows helper text when provided', () => {

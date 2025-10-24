@@ -2,6 +2,7 @@
   <div
     ref="wrapperRef"
     class="tooltip-wrapper"
+    :aria-describedby="isVisible ? tooltipId : undefined"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @focus="handleFocus"
@@ -14,6 +15,7 @@
     <Teleport to="body">
       <div
         v-if="isVisible"
+        :id="tooltipId"
         ref="tooltipRef"
         :class="tooltipClasses"
         :style="tooltipStyles"
@@ -27,7 +29,7 @@
         </div>
         
         <!-- Arrow -->
-        <div v-if="showArrow" class="tooltip-arrow" :class="arrowClasses" />
+        <div v-if="showArrow" class="tooltip-arrow" :class="arrowClasses" aria-hidden="true" />
       </div>
     </Teleport>
   </div>
@@ -59,6 +61,9 @@ const tooltipRef = ref<HTMLElement | null>(null)
 const isVisible = ref(false)
 const tooltipStyles = ref<Record<string, string>>({})
 let showTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Generate unique ID for accessibility (Requirement 13.2)
+const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`
 
 const { shouldAnimate, getDuration } = useMotionPreference()
 
