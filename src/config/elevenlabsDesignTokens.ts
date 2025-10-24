@@ -1,90 +1,155 @@
 /**
  * ElevenLabs Design Tokens
- * 
- * Core design tokens for typography, colors, spacing, and transitions
- * matching ElevenLabs.io visual design system.
+ * Button-specific design tokens matching ElevenLabs Productions page
+ * Reference: https://elevenlabs.io/app/productions
  */
 
-export const elevenlabsTokens = {
-  // Typography
-  typography: {
-    fontFamily: {
-      primary: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    },
-    fontSize: {
-      xs: '12px',
-      sm: '14px',
-      base: '18px',
-      lg: '24px',
-      xl: '32px',
-      '2xl': '48px',
-    },
-    fontWeight: {
-      normal: 400,
-      bold: 700,
-    },
-    lineHeight: {
-      tight: 1.1,
-      normal: 1.4,
-      relaxed: 1.6,
-    },
-  },
-  
-  // Colors
-  colors: {
-    white: 'rgb(255, 255, 255)',
-    black: 'rgb(0, 0, 0)',
-    gray: {
-      50: 'rgb(250, 250, 250)',
-      100: 'rgb(245, 245, 245)',
-      200: 'rgb(242, 242, 242)',
-      300: 'rgb(229, 229, 229)',
-      400: 'rgb(163, 163, 163)',
-      500: 'rgb(115, 115, 115)',
-      600: 'rgb(82, 82, 82)',
-      700: 'rgb(64, 64, 64)',
-      800: 'rgb(38, 38, 38)',
-      900: 'rgb(28, 28, 28)',
-    },
-    red: {
-      500: 'rgb(239, 68, 68)',
-      600: 'rgb(220, 38, 38)',
-    },
-  },
-  
-  // Spacing (8px base unit)
-  spacing: {
-    0: '0px',
-    1: '8px',
-    2: '16px',
-    3: '24px',
-    4: '32px',
-    6: '48px',
-    8: '64px',
-    12: '96px',
-  },
-  
-  // Border Radius
-  borderRadius: {
-    sm: '8px',
-    md: '12px',
-    full: '9999px',
-  },
-  
-  // Shadows
-  shadows: {
-    sm: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    md: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    lg: '0 10px 15px rgba(0, 0, 0, 0.1)',
-  },
-  
-  // Transitions
-  transitions: {
-    fast: '150ms',
-    normal: '200ms',
-    slow: '300ms',
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)', // ease-in-out
-  },
-} as const;
+export const elevenlabsDesignTokens = {
+  /**
+   * Button Design Tokens
+   * Precise specifications for 1:1 visual match with ElevenLabs
+   */
+  button: {
+    /**
+     * Border Radius
+     * 8px for all button variants (not fully rounded)
+     */
+    borderRadius: '8px',
 
-export type ElevenlabsTokens = typeof elevenlabsTokens;
+    /**
+     * Typography
+     * Font size, weight, and line height for button text
+     */
+    typography: {
+      fontSize: '13px',
+      fontWeight: 500, // medium
+      lineHeight: '20px',
+      fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    },
+
+    /**
+     * Button Sizes
+     * Height and horizontal padding for each size variant
+     */
+    sizes: {
+      sm: {
+        height: '32px',
+        paddingX: '10px',
+      },
+      md: {
+        height: '36px',
+        paddingX: '12px',
+      },
+      lg: {
+        height: '40px',
+        paddingX: '16px',
+      },
+    },
+
+    /**
+     * Color Variants
+     * Background, text, and border colors for each variant
+     */
+    colors: {
+      primary: {
+        background: 'rgb(0, 0, 0)',
+        text: 'rgb(255, 255, 255)',
+        border: 'transparent',
+        hover: {
+          background: 'rgb(26, 26, 26)',
+        },
+      },
+      secondary: {
+        background: 'rgb(255, 255, 255)',
+        text: 'rgb(15, 15, 16)',
+        border: 'rgba(0, 0, 29, 0.1)',
+        hover: {
+          background: 'rgb(250, 250, 250)',
+        },
+      },
+      ghost: {
+        background: 'transparent',
+        text: 'rgb(15, 15, 16)',
+        border: 'transparent',
+        hover: {
+          background: 'rgba(0, 0, 0, 0.05)',
+        },
+      },
+      destructive: {
+        background: 'rgb(220, 38, 38)',
+        text: 'rgb(255, 255, 255)',
+        border: 'transparent',
+        hover: {
+          background: 'rgb(185, 28, 28)',
+        },
+      },
+    },
+
+    /**
+     * Transitions
+     * Duration and easing for state changes
+     */
+    transition: {
+      duration: '75ms',
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      properties: ['color', 'background-color', 'border-color', 'opacity'],
+    },
+
+    /**
+     * States
+     * Opacity values for different interaction states
+     */
+    states: {
+      hover: {
+        opacity: 1,
+      },
+      active: {
+        opacity: 0.9,
+      },
+      disabled: {
+        opacity: 0.5,
+      },
+      loading: {
+        opacity: 0.7,
+      },
+    },
+  },
+} as const
+
+/**
+ * Type-safe access to ElevenLabs design tokens
+ */
+export type ElevenLabsDesignTokens = typeof elevenlabsDesignTokens
+
+/**
+ * Helper function to get button transition string
+ * Returns a CSS transition value for button state changes
+ */
+export const getButtonTransition = (): string => {
+  const { duration, easing, properties } = elevenlabsDesignTokens.button.transition
+  return properties.map(prop => `${prop} ${duration} ${easing}`).join(', ')
+}
+
+/**
+ * Helper function to get button size styles
+ * Returns height and padding values for a specific button size
+ */
+export const getButtonSize = (size: 'sm' | 'md' | 'lg') => {
+  return elevenlabsDesignTokens.button.sizes[size]
+}
+
+/**
+ * Helper function to get button variant colors
+ * Returns color values for a specific button variant
+ */
+export const getButtonColors = (variant: 'primary' | 'secondary' | 'ghost' | 'destructive') => {
+  return elevenlabsDesignTokens.button.colors[variant]
+}
+
+/**
+ * Helper function to get button typography styles
+ * Returns font size, weight, and line height for buttons
+ */
+export const getButtonTypography = () => {
+  return elevenlabsDesignTokens.button.typography
+}

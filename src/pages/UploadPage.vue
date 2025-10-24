@@ -1,328 +1,188 @@
 <template>
-  <div style="min-height: 100vh; background-color: #F9FAFB;">
-    <!-- Main Content with ElevenLabs exact specs: 752px max-width, 48px horizontal, 64px top -->
-    <div style="max-width: 752px; margin: 0 auto; padding: 64px 48px 48px;">
-      <!-- Page Header with proper semantic HTML (Requirement 13.2) -->
-      <header :class="getStaggerClass(0)" style="margin-bottom: 48px;">
-        <h1 id="page-title" style="font-size: 30px; font-weight: 600; color: #000000; margin-bottom: 8px; line-height: 1.2; letter-spacing: 0;">Upload Document</h1>
-        <p id="page-description" style="font-size: 14px; font-weight: 400; color: #6B7280; line-height: 1.5; letter-spacing: 0;">Extract vocabulary from your reading materials</p>
+  <div class="upload-page">
+    <!-- Main Content Area -->
+    <main class="upload-main">
+      <!-- Page Header -->
+      <header class="upload-header">
+        <h1 id="page-title" class="upload-title">Upload Document</h1>
+        <p id="page-description" class="upload-subtitle">Extract vocabulary from your reading materials</p>
       </header>
 
-      <!-- English Resources - Horizontal Scrollable Boxes (ElevenLabs 1:1 Replication) -->
-      <section :class="getStaggerClass(1)" style="margin-bottom: 32px; position: relative;" aria-labelledby="resources-heading">
+      <!-- Category Cards - Horizontal Scroll -->
+      <section class="category-section" aria-labelledby="resources-heading">
         <h2 id="resources-heading" class="sr-only">Select document type</h2>
-        <!-- Left Scroll Arrow -->
+        
+        <!-- Scroll Navigation -->
         <button
           v-if="canScrollLeft"
           type="button"
-          aria-label="Scroll left to view more document types"
+          aria-label="Scroll left"
           @click="scrollLeft"
-          style="position: absolute; left: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
-          @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
-          @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = '#FFFFFF'"
+          class="scroll-button scroll-button-left"
         >
-          <svg style="width: 16px; height: 16px; color: #000000;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="scroll-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        <!-- Right Scroll Arrow -->
         <button
           v-if="canScrollRight"
           type="button"
-          aria-label="Scroll right to view more document types"
+          aria-label="Scroll right"
           @click="scrollRight"
-          style="position: absolute; right: -12px; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border-radius: 50%; background-color: #FFFFFF; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 150ms ease-out;"
-          @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = '#F9FAFB'"
-          @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = '#FFFFFF'"
+          class="scroll-button scroll-button-right"
         >
-          <svg style="width: 16px; height: 16px; color: #000000;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="scroll-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </button>
 
-        <!-- Scrollable container -->
+        <!-- Category Cards Container -->
         <div 
           ref="scrollContainer"
           role="group"
           aria-label="Document type selection"
-          class="scrollable-resources" 
-          style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;"
+          class="category-scroll"
           @scroll="updateScrollButtons"
         >
-          <div style="display: flex; gap: 16px; padding: 4px 0;">
-            <button
-              v-for="resource in englishResources"
-              :key="resource.id"
-              type="button"
-              :aria-label="`Select ${resource.title} document type`"
-              :aria-pressed="selectedResource === resource.id"
-              @click="selectResource(resource.id)"
-              :style="{
-                minWidth: '200px',
-                padding: '20px',
-                backgroundColor: '#FFFFFF',
-                border: selectedResource === resource.id ? '2px solid #000000' : '1px solid #E5E7EB',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                transition: 'all 150ms ease-out',
-                textAlign: 'left',
-                flexShrink: '0',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }"
-              @mouseover="handleResourceBoxHover($event, resource.id, true)"
-              @mouseout="handleResourceBoxHover($event, resource.id, false)"
-            >
-              <!-- Icon -->
-              <div :style="{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: resource.iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }">
-                <svg style="width: 24px; height: 24px; color: #FFFFFF;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="resource.iconPath" />
-                </svg>
-              </div>
-              
-              <!-- Title -->
-              <div style="font-size: 16px; font-weight: 600; color: #000000; line-height: 1.3; letter-spacing: 0;">
-                {{ resource.title }}
-              </div>
-              
-              <!-- Description -->
-              <div style="font-size: 14px; color: #6B7280; line-height: 1.6; letter-spacing: 0;">
-                {{ resource.description }}
-              </div>
-            </button>
-          </div>
+          <button
+            v-for="resource in englishResources"
+            :key="resource.id"
+            type="button"
+            :aria-label="`Select ${resource.title}`"
+            :aria-pressed="selectedResource === resource.id"
+            @click="selectResource(resource.id)"
+            class="category-card"
+            :class="{ 'category-card-selected': selectedResource === resource.id }"
+          >
+            <div class="category-icon" :style="{ backgroundColor: resource.iconBg }">
+              <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="resource.iconPath" />
+              </svg>
+            </div>
+            <div class="category-title">{{ resource.title }}</div>
+            <div class="category-description">{{ resource.description }}</div>
+          </button>
         </div>
       </section>
 
-      <!-- ElevenLabs-style Drop Zone with Card styling and smooth transitions -->
-      <section aria-labelledby="upload-heading">
+      <!-- Upload Drop Zone -->
+      <section aria-labelledby="upload-heading" class="upload-section">
         <h2 id="upload-heading" class="sr-only">Upload your document</h2>
-        <Card
-          data-animate-child
-          variant="outlined"
-          padding="large"
-          :interactive="false"
+        
+        <div
           role="region"
           aria-label="File upload drop zone"
           aria-describedby="upload-instructions"
-          :class="[
-          'min-h-[280px]',
-          'flex',
-          'items-center',
-          'justify-center',
-          'border-2',
-          'border-dashed',
-          'transition-all',
-          'duration-300',
-          'ease-in-out',
-          {
-            'border-red-600 bg-red-50 scale-[0.98]': validationError || error,
-            'border-black bg-gray-50 scale-[1.02]': isDragging && !validationError && !error,
-            'border-gray-300 bg-[#F8F9FA]': !isDragging && !validationError && !error,
-            'opacity-50 cursor-not-allowed': !canUpload || isProcessing,
-            'cursor-pointer hover:border-gray-400 hover:bg-gray-50 hover:scale-[1.01]': canUpload && !isProcessing && !isDragging
-          }
-        ]"
-        @dragover.prevent="onDragOver"
-        @dragleave.prevent="onDragLeave"
-        @drop.prevent="onDrop"
-        @click="triggerFileInput"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          aria-label="Choose file to upload"
-          style="display: none;"
-          accept=".pdf,.txt,.docx,.xlsx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          @change="onFileSelect"
-        />
-
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%;">
-          <!-- Upload Icon -->
-          <svg
-            style="width: 48px; height: 48px; color: #9CA3AF;"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            ></path>
-          </svg>
-
-          <!-- Selected File Display with fade-in animation -->
-          <Transition
-            enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div v-if="selectedFile" style="display: flex; align-items: center; gap: 12px; padding: 16px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #E5E7EB;">
-              <svg
-                style="width: 24px; height: 24px; color: #6B7280; flex-shrink: 0;"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                ></path>
-              </svg>
-              <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <p style="font-size: 15px; font-weight: 600; color: #000000; word-break: break-word; line-height: 1.4; letter-spacing: -0.01em;">{{ selectedFile.name }}</p>
-                <p style="font-size: 14px; color: #6B7280; letter-spacing: -0.005em;">{{ formatFileSize(selectedFile.size) }}</p>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Upload Instructions with fade-in animation -->
-          <Transition
-            enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div v-if="!selectedFile" id="upload-instructions" style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
-              <p style="font-size: 16px; font-weight: 600; color: #000000; line-height: 1.3; letter-spacing: 0;">
-                Click to upload or drag and drop
-              </p>
-              <p style="font-size: 14px; color: #6B7280; line-height: 1.6; letter-spacing: 0;">
-                Supported formats: PDF, TXT, DOCX, XLSX
-              </p>
-              <p style="font-size: 14px; color: #9CA3AF; line-height: 1.5;">Maximum file size: 50MB</p>
-            </div>
-          </Transition>
-        </div>
-      </Card>
-      </section>
-
-      <!-- Loading Skeleton for Processing State with Card styling and fade-in animation -->
-      <!-- Live region for dynamic status updates (Requirement 13.2) -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-2"
-      >
-        <div 
-          v-if="isProcessing" 
-          class="mt-6 space-y-4" 
-          data-animate-child
-          role="status"
-          aria-live="polite"
-          aria-label="Processing document"
+          class="upload-dropzone"
+          :class="{
+            'dropzone-error': validationError || error,
+            'dropzone-dragging': isDragging && !validationError && !error,
+            'dropzone-disabled': !canUpload || isProcessing
+          }"
+          @dragover.prevent="onDragOver"
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onDrop"
+          @click="triggerFileInput"
         >
-          <Card variant="outlined" padding="medium">
-            <div class="flex items-center gap-4 mb-4">
-              <Skeleton variant="circular" width="48px" height="48px" />
-              <div class="flex-1 space-y-2">
-                <Skeleton variant="text" width="60%" height="20px" />
-                <Skeleton variant="text" width="40%" height="16px" />
-              </div>
-            </div>
-            <Skeleton variant="rectangular" width="100%" height="120px" />
-          </Card>
-        </div>
-      </Transition>
+          <input
+            ref="fileInput"
+            type="file"
+            aria-label="Choose file to upload"
+            class="file-input"
+            accept=".pdf,.txt,.docx,.xlsx"
+            @change="onFileSelect"
+          />
 
-      <!-- Error Display with Card styling and fade-in animation -->
-      <!-- Live region for error announcements (Requirement 13.2) -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-2"
-      >
-        <Card 
-          v-if="validationError || error" 
-          variant="outlined" 
-          padding="medium"
-          role="alert"
-          aria-live="assertive"
-          class="mt-4 bg-red-50 border-red-600"
-        >
-          <div class="flex items-center gap-2 text-red-900 text-[15px] leading-relaxed">
-            <svg
-              class="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+          <div class="dropzone-content">
+            <!-- Upload Icon -->
+            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
             </svg>
-            <span>{{ validationError || error }}</span>
+
+            <!-- Selected File Display -->
+            <Transition name="fade-scale">
+              <div v-if="selectedFile" class="selected-file">
+                <svg class="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <div class="file-info">
+                  <p class="file-name">{{ selectedFile.name }}</p>
+                  <p class="file-size">{{ formatFileSize(selectedFile.size) }}</p>
+                </div>
+              </div>
+            </Transition>
+
+            <!-- Upload Instructions -->
+            <Transition name="fade-scale">
+              <div v-if="!selectedFile" id="upload-instructions" class="upload-instructions">
+                <p class="instruction-title">Click to upload or drag and drop</p>
+                <p class="instruction-formats">Supported formats: PDF, TXT, DOCX, XLSX</p>
+                <p class="instruction-limit">Maximum file size: 50MB</p>
+              </div>
+            </Transition>
+
+            <!-- Upload Button (moved from footer) -->
+            <div class="dropzone-button-container">
+              <Button
+                variant="secondary"
+                size="md"
+                :disabled="!canUploadFile"
+                :loading="isProcessing"
+                :aria-label="isProcessing ? 'Processing document' : 'Upload and process document'"
+                @click.stop="handleUpload"
+                class="upload-button"
+              >
+                <svg v-if="!isProcessing" class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span v-if="isProcessing">Processing...</span>
+                <span v-else>Upload Document</span>
+              </Button>
+            </div>
           </div>
-        </Card>
+        </div>
+      </section>
+
+      <!-- Error Display -->
+      <Transition name="fade-slide">
+        <div 
+          v-if="validationError || error" 
+          role="alert"
+          aria-live="assertive"
+          class="error-message"
+        >
+          <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{{ validationError || error }}</span>
+        </div>
       </Transition>
-
-      <!-- Upload Button using Button component -->
-      <Button
-        data-animate-child
-        variant="primary"
-        size="md"
-        :disabled="!canUploadFile"
-        :loading="isProcessing"
-        :aria-label="isProcessing ? 'Processing document' : 'Upload and process document'"
-        full-width
-        @click="handleUpload"
-        class="mt-6"
-      >
-        <span v-if="isProcessing">Processing...</span>
-        <span v-else>Upload and Process</span>
-      </Button>
-
-
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUpload } from '@/composables/useUpload'
-import { usePageEntranceAnimation } from '@/composables/usePageEntranceAnimation'
 import Button from '@/components/ui/Button.vue'
-import Card from '@/components/ui/Card.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
 
 const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
-
-// Setup page entrance animations
-const { getStaggerClass } = usePageEntranceAnimation({
-  baseDelay: 50,
-  staggerDelay: 60,
-})
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
@@ -332,9 +192,8 @@ const selectedResource = ref<string>('toefl')
 const scrollContainer = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
-const spinnerRef = ref<HTMLElement | null>(null)
 
-// English Resources - Boxes with icons and descriptions (ElevenLabs 1:1 Replication)
+// English Resources - Category Cards
 const englishResources = [
   {
     id: 'toefl',
@@ -384,14 +243,6 @@ function selectResource(id: string) {
   selectedResource.value = id
 }
 
-function handleResourceBoxHover(event: MouseEvent, resourceId: string, isHover: boolean) {
-  if (selectedResource.value !== resourceId) {
-    const target = event.currentTarget as HTMLElement
-    target.style.borderColor = isHover ? '#9CA3AF' : '#E5E7EB'
-    target.style.boxShadow = isHover ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
-  }
-}
-
 function scrollLeft() {
   if (scrollContainer.value) {
     scrollContainer.value.scrollBy({ left: -220, behavior: 'smooth' })
@@ -413,7 +264,6 @@ function updateScrollButtons() {
   }
 }
 
-// Initialize scroll buttons and spinner animation on mount
 onMounted(() => {
   updateScrollButtons()
   if (scrollContainer.value) {
@@ -460,11 +310,9 @@ function onDrop(event: DragEvent) {
 }
 
 function handleFileSelection(file: File) {
-  // Reset previous errors
   validationError.value = null
   resetUpload()
 
-  // Validate the file
   const validation = validateUploadFile(file)
   
   if (!validation.valid) {
@@ -473,7 +321,6 @@ function handleFileSelection(file: File) {
     return
   }
 
-  // File is valid
   selectedFile.value = file
   validationError.value = null
 }
@@ -483,9 +330,7 @@ async function handleUpload() {
 
   try {
     await uploadFile(selectedFile.value)
-    // Navigation to results page is handled by the composable
   } catch (err) {
-    // Error is handled by the composable and stored in state
     console.error('Upload failed:', err)
   }
 }
@@ -502,12 +347,358 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <style scoped>
-/* Hide scrollbar for horizontal resources list */
-.scrollable-resources::-webkit-scrollbar {
+/* ===== ELEVENLABS DESIGN SYSTEM ===== */
+
+/* Page Layout */
+.upload-page {
+  min-height: 100vh;
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .upload-main {
+    padding: 32px 24px;
+  }
+}
+
+/* Header */
+.upload-header {
+  margin-bottom: 32px;
+}
+
+.upload-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .upload-title {
+    font-size: 30px;
+  }
+}
+
+.upload-subtitle {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+/* Category Section */
+.category-section {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.category-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+  -ms-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-scroll::-webkit-scrollbar {
   display: none;
 }
 
-/* Screen reader only class for accessibility (Requirement 13.2) */
+/* Category Cards */
+.category-card {
+  flex-shrink: 0;
+  width: 180px;
+  padding: 16px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-card:hover {
+  border-color: #9CA3AF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.category-card-selected {
+  border: 2px solid #000000;
+  border-color: #000000;
+}
+
+.category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-icon .icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.category-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.category-description {
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+/* Scroll Buttons */
+.scroll-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.scroll-button:hover {
+  background-color: #F9FAFB;
+}
+
+.scroll-button-left {
+  left: -12px;
+}
+
+.scroll-button-right {
+  right: -12px;
+}
+
+.scroll-icon {
+  width: 16px;
+  height: 16px;
+  color: #111827;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-bottom: 24px;
+}
+
+.upload-dropzone {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #E5E7EB;
+  border-radius: 12px;
+  background-color: #F9FAFB;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 32px 24px;
+}
+
+.upload-dropzone:hover:not(.dropzone-disabled) {
+  border-color: #9CA3AF;
+  background-color: #F3F4F6;
+}
+
+.dropzone-dragging {
+  border-color: #000000;
+  background-color: #F3F4F6;
+  transform: scale(1.01);
+}
+
+.dropzone-error {
+  border-color: #DC2626;
+  background-color: #FEF2F2;
+}
+
+.dropzone-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-input {
+  display: none;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  color: #9CA3AF;
+}
+
+/* Selected File */
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  width: 100%;
+}
+
+.file-icon {
+  width: 24px;
+  height: 24px;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.file-size {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+/* Upload Instructions */
+.upload-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.instruction-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.instruction-formats {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.instruction-limit {
+  font-size: 14px;
+  color: #9CA3AF;
+  line-height: 1.5;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: #FEF2F2;
+  border: 1px solid #DC2626;
+  border-radius: 8px;
+  color: #991B1B;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 16px;
+}
+
+.error-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Dropzone Button Container */
+.dropzone-button-container {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Transitions */
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-scale-enter-from,
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Screen Reader Only */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -520,4 +711,3 @@ function formatFileSize(bytes: number): string {
   border-width: 0;
 }
 </style>
-

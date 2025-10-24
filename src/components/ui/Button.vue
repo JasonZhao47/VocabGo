@@ -120,68 +120,80 @@ const buttonClasses = computed(() => {
   // Position relative for ripple effect
   classes.push('relative', 'overflow-hidden')
   
-  // Font styling - 14px font size, normal weight
-  classes.push('text-sm', 'font-normal')
+  // Font styling - ElevenLabs: 13px font size, medium weight (500), 20px line height
+  classes.push('text-[13px]', 'font-medium', 'leading-[20px]')
   
-  // Border radius - full rounded (9999px)
-  classes.push('rounded-full')
+  // Border radius - ElevenLabs: 8px
+  classes.push('rounded-lg')
   
-  // Transitions - optimized for GPU acceleration (transform + opacity only)
-  classes.push('transition-transform-opacity', 'duration-200', 'ease-in-out')
+  // Transitions - ElevenLabs: 75ms duration, no scale transforms
+  classes.push('transition-all', 'duration-75', 'ease-in-out')
   
-  // Micro-interactions - subtle scale on hover with will-change hint
-  if (!props.disabled && !props.loading) {
-    classes.push('hover:scale-[1.02]', 'hover:will-change-transform')
-  }
+  // No scale transforms on hover (ElevenLabs style)
+  // Only opacity and color transitions
   
   // Focus visible styles
   classes.push('focus-visible:outline-2', 'focus-visible:outline-offset-2')
   
-  // Disabled state
-  classes.push('disabled:opacity-50', 'disabled:cursor-not-allowed')
+  // Disabled state - cursor only (opacity handled per variant)
+  classes.push('disabled:cursor-not-allowed')
   
-  // Variant-specific styles
+  // Variant-specific styles - ElevenLabs colors
   switch (props.variant) {
     case 'primary':
       classes.push('bg-black', 'text-white')
       if (!props.disabled && !props.loading) {
-        classes.push('hover:opacity-90', 'active:opacity-80', 'active:scale-[0.98]')
+        classes.push('hover:bg-gray-800')
+      } else {
+        classes.push('disabled:opacity-50')
       }
       classes.push('focus-visible:outline-black')
       break
     case 'secondary':
-      classes.push('bg-[rgb(242,242,242)]', 'text-black')
+      // ElevenLabs: white background with visible border
+      classes.push('bg-black', 'text-[rgb(15,15,16)]', 'border-2', 'border-solid', 'border-[#9CA3AF]')
       if (!props.disabled && !props.loading) {
-        classes.push('hover:bg-[rgb(229,229,229)]', 'active:bg-[rgb(212,212,212)]', 'active:scale-[0.98]')
+        classes.push('hover:bg-gray-50', 'hover:border-[#6B7280]')
+      } else {
+        // Keep border visible, only reduce text opacity
+        classes.push('disabled:text-gray-400')
       }
       classes.push('focus-visible:outline-black')
       break
     case 'ghost':
-      classes.push('bg-transparent', 'text-black')
+      // ElevenLabs: transparent background, no border
+      classes.push('bg-transparent', 'text-[rgb(15,15,16)]')
       if (!props.disabled && !props.loading) {
-        classes.push('hover:bg-[rgb(242,242,242)]', 'active:bg-[rgb(229,229,229)]', 'active:scale-[0.98]')
+        classes.push('hover:bg-gray-100')
+      } else {
+        classes.push('disabled:opacity-50')
       }
       classes.push('focus-visible:outline-black')
       break
     case 'destructive':
-      classes.push('bg-[rgb(239,68,68)]', 'text-white')
+      classes.push('bg-red-600', 'text-white')
       if (!props.disabled && !props.loading) {
-        classes.push('hover:opacity-90', 'active:opacity-80', 'active:scale-[0.98]')
+        classes.push('hover:bg-red-700')
+      } else {
+        classes.push('disabled:opacity-50')
       }
-      classes.push('focus-visible:outline-[rgb(239,68,68)]')
+      classes.push('focus-visible:outline-red-600')
       break
   }
   
-  // Size-specific styles
+  // Size-specific styles - ElevenLabs specifications
   switch (props.size) {
     case 'sm':
-      classes.push('px-3', 'py-1.5', 'h-8')
+      // 32px height, 10px horizontal padding
+      classes.push('h-8', 'px-[10px]')
       break
     case 'md':
-      classes.push('px-4', 'py-2', 'h-10')
+      // 36px height, 12px horizontal padding
+      classes.push('h-9', 'px-3')
       break
     case 'lg':
-      classes.push('px-6', 'py-3', 'h-12')
+      // 40px height, 16px horizontal padding
+      classes.push('h-10', 'px-4')
       break
   }
   

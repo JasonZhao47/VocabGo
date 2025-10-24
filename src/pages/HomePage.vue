@@ -1,36 +1,57 @@
 <template>
   <div class="home-page">
-    <!-- Hero Section with proper semantic HTML and ARIA (Requirement 13.2) -->
+    <!-- Hero Section with proper semantic HTML and ARIA -->
     <section class="hero-section" aria-labelledby="hero-title">
       <div class="hero-content">
-        <!-- Main heading with stagger animation -->
-        <h1 id="hero-title" :class="getStaggerClass(0)" class="hero-title">
-          VocabGo
-        </h1>
-        
-        <!-- Subtitle with stagger animation -->
-        <p :class="getStaggerClass(1)" class="hero-subtitle">
-          Generate bilingual wordlists from your documents
+        <!-- Workspace name -->
+        <p :class="getStaggerClass(0)" class="workspace-name">
+          My Workspace
         </p>
         
-        <!-- Action Buttons with stagger animation -->
-        <nav :class="getStaggerClass(2)" class="hero-actions" aria-label="Primary navigation">
-          <Button
-            variant="primary"
-            size="lg"
+        <!-- Main greeting heading -->
+        <div class="hero-header">
+          <h1 id="hero-title" :class="getStaggerClass(1)" class="hero-title">
+            Welcome to VocabGo
+          </h1>
+        </div>
+        
+        <!-- Subtitle with action -->
+        <div :class="getStaggerClass(2)" class="hero-subtitle-section">
+          <p class="hero-subtitle">
+            Generate bilingual wordlists from your documents
+          </p>
+        </div>
+        
+        <!-- Action Cards Grid -->
+        <nav :class="getStaggerClass(3)" class="action-cards" aria-label="Primary navigation">
+          <button
+            class="action-card"
             aria-label="Navigate to upload document page"
             @click="goToUpload"
           >
-            Upload Document
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
+            <div class="card-icon upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <p class="card-label">Upload Document</p>
+          </button>
+          
+          <button
+            class="action-card"
             aria-label="Navigate to saved wordlists page"
             @click="goToWordlists"
           >
-            View Saved Wordlists
-          </Button>
+            <div class="card-icon wordlists-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            </div>
+            <p class="card-label">View Wordlists</p>
+          </button>
         </nav>
       </div>
     </section>
@@ -38,16 +59,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePageEntranceAnimation } from '@/composables/usePageEntranceAnimation'
-import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
 
-// Setup page entrance animations
+// Setup page entrance animations with longer duration to prevent disappearing
 const { getStaggerClass } = usePageEntranceAnimation({
-  baseDelay: 100,
-  staggerDelay: 80,
+  baseDelay: 0,
+  staggerDelay: 100,
+})
+
+// Get time of day for greeting
+const timeOfDay = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
 })
 
 function goToUpload() {
@@ -60,110 +89,181 @@ function goToWordlists() {
 </script>
 
 <style scoped>
-/* Home Page Container - using 8px base unit spacing */
+/* Home Page - ElevenLabs exact styling */
 .home-page {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   background-color: rgb(255, 255, 255);
 }
 
-/* Hero Section - centered content with proper spacing */
+/* Hero Section - matches ElevenLabs main content padding */
 .hero-section {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px; /* 3 * 8px base unit */
+  padding: 64px 20px 20px;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
 .hero-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
-  padding: 96px 0; /* 12 * 8px base unit */
+  max-width: 1024px;
+  width: 100%;
 }
 
-/* Hero Title - ElevenLabs typography scale (48px) */
+/* Workspace Name - exact ElevenLabs styling */
+.workspace-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: rgba(0, 0, 17, 0.53);
+  margin: 0 0 4px 0;
+}
+
+/* Hero Header */
+.hero-header {
+  margin-bottom: 8px;
+}
+
+/* Hero Title - ElevenLabs h5 styling with proper font weight */
 .hero-title {
-  font-size: 48px;
-  line-height: 1.1;
-  font-weight: 700;
-  color: rgb(0, 0, 0);
-  margin-bottom: 16px; /* 2 * 8px base unit */
-  letter-spacing: -0.02em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+  color: rgba(0, 0, 1, 0.89);
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-/* Hero Subtitle - ElevenLabs typography scale (18px base) */
+/* Hero Subtitle Section */
+.hero-subtitle-section {
+  margin-bottom: 32px;
+}
+
 .hero-subtitle {
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: 14px;
   font-weight: 400;
-  color: rgb(115, 115, 115); /* gray-500 for secondary text */
-  margin-bottom: 48px; /* 6 * 8px base unit */
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  line-height: 20px;
+  color: rgba(0, 0, 17, 0.53);
+  margin: 0;
 }
 
-/* Hero Actions - button group with proper spacing */
-.hero-actions {
+/* Action Cards Grid - exact ElevenLabs grid layout */
+.action-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 135px);
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+/* Action Card - exact ElevenLabs card styling */
+.action-card {
   display: flex;
-  gap: 16px; /* 2 * 8px base unit */
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  flex-wrap: wrap;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
 }
 
-/* Responsive: Mobile (< 768px) */
-@media (max-width: 767px) {
-  .hero-content {
-    padding: 64px 0; /* 8 * 8px base unit */
+.action-card:hover .card-icon {
+  background-color: rgba(0, 0, 23, 0.075);
+}
+
+.action-card:focus {
+  outline: 2px solid rgba(0, 0, 1, 0.2);
+  outline-offset: 2px;
+  border-radius: 20px;
+}
+
+/* Card Icon Container */
+.card-icon {
+  width: 135px;
+  height: 135px;
+  background-color: rgba(0, 0, 23, 0.043);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-icon svg {
+  width: 48px;
+  height: 48px;
+  color: rgba(0, 0, 1, 0.7);
+}
+
+/* Upload icon - blue tint */
+.upload-icon {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.upload-icon svg {
+  color: rgb(59, 130, 246);
+}
+
+.action-card:hover .upload-icon {
+  background-color: rgba(59, 130, 246, 0.12);
+}
+
+/* Wordlists icon - purple tint */
+.wordlists-icon {
+  background-color: rgba(147, 51, 234, 0.08);
+}
+
+.wordlists-icon svg {
+  color: rgb(147, 51, 234);
+}
+
+.action-card:hover .wordlists-icon {
+  background-color: rgba(147, 51, 234, 0.12);
+}
+
+/* Card Label - exact ElevenLabs label styling */
+.card-label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: rgba(0, 0, 1, 0.89);
+  margin: 0;
+  text-align: center;
+}
+
+/* Animation fixes - prevent disappearing text */
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-name,
+  .hero-title,
+  .hero-subtitle,
+  .action-cards {
+    animation: fadeInStay 0.4s ease-out forwards;
+    animation-fill-mode: both;
+  }
+  
+  .workspace-name {
+    animation-delay: 0s;
   }
   
   .hero-title {
-    font-size: 32px; /* Scale down to xl size */
+    animation-delay: 0.1s;
   }
   
   .hero-subtitle {
-    font-size: 16px;
-    margin-bottom: 32px; /* 4 * 8px base unit */
+    animation-delay: 0.2s;
   }
   
-  .hero-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .hero-actions :deep(button) {
-    width: 100%;
+  .action-cards {
+    animation-delay: 0.3s;
   }
 }
 
-/* Responsive: Tablet (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .hero-content {
-    padding: 80px 0; /* 10 * 8px base unit */
-  }
-  
-  .hero-title {
-    font-size: 40px;
-  }
-}
-
-/* Smooth scroll animations for content sections */
-@media (prefers-reduced-motion: no-preference) {
-  .hero-title,
-  .hero-subtitle,
-  .hero-actions {
-    animation: fadeInUp 300ms ease-in-out;
-  }
-}
-
-@keyframes fadeInUp {
+@keyframes fadeInStay {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -173,10 +273,42 @@ function goToWordlists() {
 
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
+  .workspace-name,
   .hero-title,
   .hero-subtitle,
-  .hero-actions {
+  .action-cards {
     animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Responsive: Mobile */
+@media (max-width: 767px) {
+  .hero-section {
+    padding: 24px 16px 16px;
+  }
+  
+  .hero-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  
+  .action-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .card-icon {
+    width: 100%;
+    height: 120px;
+  }
+}
+
+/* Responsive: Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .action-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 </style>
