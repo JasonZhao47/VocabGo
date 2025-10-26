@@ -152,9 +152,6 @@ describe('Bundle Optimization', () => {
       const uploadRoute = routes.find(r => r.name === 'upload')
       expect(uploadRoute).toBeDefined()
       
-      const processingRoute = routes.find(r => r.name === 'processing')
-      expect(processingRoute).toBeDefined()
-      
       const resultRoute = routes.find(r => r.name === 'result')
       expect(resultRoute).toBeDefined()
       

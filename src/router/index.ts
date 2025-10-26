@@ -19,11 +19,6 @@ const router = createRouter({
       component: () => import('@/pages/UploadPage.vue')
     },
     { 
-      path: '/processing', 
-      name: 'processing', 
-      component: () => import('@/pages/ProcessingPage.vue')
-    },
-    { 
       path: '/result', 
       name: 'result', 
       component: () => import('@/pages/ResultPage.vue')

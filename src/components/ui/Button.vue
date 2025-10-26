@@ -150,13 +150,13 @@ const buttonClasses = computed(() => {
       classes.push('focus-visible:outline-black')
       break
     case 'secondary':
-      // ElevenLabs: white background with visible border
-      classes.push('bg-black', 'text-[rgb(15,15,16)]', 'border-2', 'border-solid', 'border-[#9CA3AF]')
+      // ElevenLabs: white background with black border
+      classes.push('bg-white', 'text-black', 'border', 'border-solid', 'border-black')
       if (!props.disabled && !props.loading) {
-        classes.push('hover:bg-gray-50', 'hover:border-[#6B7280]')
+        classes.push('hover:bg-gray-50')
       } else {
         // Keep border visible, only reduce text opacity
-        classes.push('disabled:text-gray-400')
+        classes.push('disabled:opacity-50', 'disabled:border-gray-300')
       }
       classes.push('focus-visible:outline-black')
       break

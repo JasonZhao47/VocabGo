@@ -17,10 +17,11 @@
 ### Pages (`src/pages/`)
 Page-based routing structure:
 - `HomePage.vue` - Landing page with navigation to upload/wordlists
-- `UploadPage.vue` - File upload interface
-- `ProcessingPage.vue` - Upload progress and processing status
+- `UploadPage.vue` - File upload interface (includes ProcessingModal for upload progress)
 - `ResultPage.vue` - Display generated wordlists
 - `SavedWordlistsPage.vue` - Manage saved wordlists
+- `PracticeDashboard.vue` - Practice question management for teachers
+- `StudentPracticeView.vue` - Practice interface for students
 
 ### State Management (`src/state/`)
 Reactive state using Vue's Composition API:

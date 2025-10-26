@@ -186,7 +186,7 @@ interface TableAction {
 
 interface Props {
   columns: TableColumn[]
-  data: T[]
+  data: readonly T[] | T[]
   loading?: boolean
   error?: string | null
   onRowClick?: (row: T) => void

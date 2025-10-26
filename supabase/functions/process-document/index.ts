@@ -152,6 +152,25 @@ serve(async (req) => {
 
     console.log(`Processing ${file.name} (${documentType}, ${fileData.length} bytes)`)
 
+    // Limit file size for DOCX to prevent memory issues (mammoth loads entire file)
+    // DOCX files decompress to ~10x their size, so we need aggressive limits
+    const MAX_DOCX_SIZE = 500 * 1024 // 500KB for DOCX (decompresses to ~5MB)
+    if (documentType === 'docx' && fileData.length > MAX_DOCX_SIZE) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'FILE_TOO_LARGE',
+            message: `DOCX files larger than 500KB are not supported due to memory constraints. Please use a smaller document, split it into sections, or try PDF format instead.`,
+          },
+        } as ProcessResponse),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        }
+      )
+    }
+
     // Stage 1: Parse document
     const parseStart = Date.now()
     let rawText: string
@@ -192,6 +211,13 @@ serve(async (req) => {
 
     stages.parsing = Date.now() - parseStart
     console.log(`Parsed document in ${stages.parsing}ms, extracted ${rawText.length} characters`)
+
+    // Truncate extremely large documents to prevent memory issues
+    const MAX_TEXT_LENGTH = 100000 // 100k characters (~50 pages)
+    if (rawText.length > MAX_TEXT_LENGTH) {
+      console.warn(`Document too large (${rawText.length} chars), truncating to ${MAX_TEXT_LENGTH} chars`)
+      rawText = rawText.slice(0, MAX_TEXT_LENGTH)
+    }
 
     // Stage 2: Clean text
     const cleanStart = Date.now()

@@ -229,7 +229,7 @@ watch(() => props.modelValue, (isOpen) => {
   }
 })
 
-// Expose methods for parent component
+// Expose methods and state for parent component and tests
 defineExpose({
   setSubmitting: (value: boolean) => {
     isSubmitting.value = value
@@ -238,6 +238,10 @@ defineExpose({
     validationError.value = error
     isSubmitting.value = false
   },
+  // Expose state for testing
+  isSubmitting,
+  validationError,
+  inputRef,
 })
 </script>
 

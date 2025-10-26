@@ -1,4 +1,4 @@
-import { elevenlabsTokens } from './src/config/elevenlabsDesignTokens.ts';
+import { designTokens } from './src/config/designTokens.ts';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -37,8 +37,8 @@ export default {
       // ELEVENLABS DESIGN TOKENS
       // ============================================
       fontFamily: {
-        sans: elevenlabsTokens.typography.fontFamily.primary.split(',').map(f => f.trim()),
-        elevenlabs: elevenlabsTokens.typography.fontFamily.primary.split(',').map(f => f.trim()),
+        sans: designTokens.typography.fontFamily.sans.split(',').map(f => f.trim()),
+        elevenlabs: designTokens.typography.fontFamily.sans.split(',').map(f => f.trim()),
       },
       
       // ============================================
@@ -46,10 +46,9 @@ export default {
       // ============================================
       colors: {
         // ElevenLabs core colors
-        'elevenlabs-white': elevenlabsTokens.colors.white,
-        'elevenlabs-black': elevenlabsTokens.colors.black,
-        'elevenlabs-gray': elevenlabsTokens.colors.gray,
-        'elevenlabs-red': elevenlabsTokens.colors.red,
+        'elevenlabs-white': designTokens.colors.white,
+        'elevenlabs-black': designTokens.colors.black,
+        'elevenlabs-gray': designTokens.colors.gray,
         // Primary Brand (Black for ElevenLabs aesthetic)
         primary: {
           DEFAULT: '#000000',
@@ -122,12 +121,12 @@ export default {
       // ============================================
       fontSize: {
         // ElevenLabs core sizes
-        'elevenlabs-xs': [elevenlabsTokens.typography.fontSize.xs, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
-        'elevenlabs-sm': [elevenlabsTokens.typography.fontSize.sm, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
-        'elevenlabs-base': [elevenlabsTokens.typography.fontSize.base, { lineHeight: elevenlabsTokens.typography.lineHeight.relaxed }],
-        'elevenlabs-lg': [elevenlabsTokens.typography.fontSize.lg, { lineHeight: elevenlabsTokens.typography.lineHeight.normal }],
-        'elevenlabs-xl': [elevenlabsTokens.typography.fontSize.xl, { lineHeight: elevenlabsTokens.typography.lineHeight.tight }],
-        'elevenlabs-2xl': [elevenlabsTokens.typography.fontSize['2xl'], { lineHeight: elevenlabsTokens.typography.lineHeight.tight }],
+        'elevenlabs-xs': [designTokens.typography.fontSize.xs, { lineHeight: designTokens.typography.lineHeight.normal }],
+        'elevenlabs-sm': [designTokens.typography.fontSize.sm, { lineHeight: designTokens.typography.lineHeight.normal }],
+        'elevenlabs-base': [designTokens.typography.fontSize.base, { lineHeight: designTokens.typography.lineHeight.relaxed }],
+        'elevenlabs-lg': [designTokens.typography.fontSize.lg, { lineHeight: designTokens.typography.lineHeight.normal }],
+        'elevenlabs-xl': [designTokens.typography.fontSize.xl, { lineHeight: designTokens.typography.lineHeight.tight }],
+        'elevenlabs-2xl': [designTokens.typography.fontSize['2xl'], { lineHeight: designTokens.typography.lineHeight.tight }],
         
         // Display (Hero headings)
         'display-lg': ['64px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
@@ -157,19 +156,19 @@ export default {
       
       // Font Weights (ElevenLabs + Extended)
       fontWeight: {
-        normal: elevenlabsTokens.typography.fontWeight.normal,
+        normal: designTokens.typography.fontWeight.normal,
         medium: '500',
         semibold: '600',
-        bold: elevenlabsTokens.typography.fontWeight.bold,
-        'elevenlabs-normal': elevenlabsTokens.typography.fontWeight.normal,
-        'elevenlabs-bold': elevenlabsTokens.typography.fontWeight.bold,
+        bold: designTokens.typography.fontWeight.bold,
+        'elevenlabs-normal': designTokens.typography.fontWeight.normal,
+        'elevenlabs-bold': designTokens.typography.fontWeight.bold,
       },
       
       // Line Heights (ElevenLabs)
       lineHeight: {
-        'elevenlabs-tight': elevenlabsTokens.typography.lineHeight.tight,
-        'elevenlabs-normal': elevenlabsTokens.typography.lineHeight.normal,
-        'elevenlabs-relaxed': elevenlabsTokens.typography.lineHeight.relaxed,
+        'elevenlabs-tight': designTokens.typography.lineHeight.tight,
+        'elevenlabs-normal': designTokens.typography.lineHeight.normal,
+        'elevenlabs-relaxed': designTokens.typography.lineHeight.relaxed,
       },
       
       // ============================================
@@ -177,14 +176,14 @@ export default {
       // ============================================
       spacing: {
         // ElevenLabs core spacing
-        'elevenlabs-0': elevenlabsTokens.spacing[0],
-        'elevenlabs-1': elevenlabsTokens.spacing[1],
-        'elevenlabs-2': elevenlabsTokens.spacing[2],
-        'elevenlabs-3': elevenlabsTokens.spacing[3],
-        'elevenlabs-4': elevenlabsTokens.spacing[4],
-        'elevenlabs-6': elevenlabsTokens.spacing[6],
-        'elevenlabs-8': elevenlabsTokens.spacing[8],
-        'elevenlabs-12': elevenlabsTokens.spacing[12],
+        'elevenlabs-xs': designTokens.spacing.xs,
+        'elevenlabs-sm': designTokens.spacing.sm,
+        'elevenlabs-md': designTokens.spacing.md,
+        'elevenlabs-lg': designTokens.spacing.lg,
+        'elevenlabs-xl': designTokens.spacing.xl,
+        'elevenlabs-2xl': designTokens.spacing['2xl'],
+        'elevenlabs-3xl': designTokens.spacing['3xl'],
+        'elevenlabs-4xl': designTokens.spacing['4xl'],
         
         // Extended spacing scale
         '0': '0px',
@@ -213,9 +212,9 @@ export default {
       // ============================================
       borderRadius: {
         'none': '0',
-        'elevenlabs-sm': elevenlabsTokens.borderRadius.sm,
-        'elevenlabs-md': elevenlabsTokens.borderRadius.md,
-        'elevenlabs-full': elevenlabsTokens.borderRadius.full,
+        'elevenlabs-sm': designTokens.borderRadius.sm,
+        'elevenlabs-md': designTokens.borderRadius.md,
+        'elevenlabs-full': designTokens.borderRadius.full,
         'sm': '6px',
         'DEFAULT': '8px',
         'md': '12px',
@@ -229,9 +228,9 @@ export default {
       // BOX SHADOWS (ElevenLabs + Extended)
       // ============================================
       boxShadow: {
-        'elevenlabs-sm': elevenlabsTokens.shadows.sm,
-        'elevenlabs-md': elevenlabsTokens.shadows.md,
-        'elevenlabs-lg': elevenlabsTokens.shadows.lg,
+        'elevenlabs-sm': designTokens.shadows.sm,
+        'elevenlabs-md': designTokens.shadows.md,
+        'elevenlabs-lg': designTokens.shadows.lg,
         'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'sm': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
         'DEFAULT': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
@@ -246,9 +245,9 @@ export default {
       // TRANSITIONS & ANIMATIONS (ElevenLabs + Extended)
       // ============================================
       transitionDuration: {
-        'elevenlabs-fast': elevenlabsTokens.transitions.fast,
-        'elevenlabs-normal': elevenlabsTokens.transitions.normal,
-        'elevenlabs-slow': elevenlabsTokens.transitions.slow,
+        'elevenlabs-fast': designTokens.transitions.duration.fast,
+        'elevenlabs-normal': designTokens.transitions.duration.normal,
+        'elevenlabs-slow': designTokens.transitions.duration.slow,
         'instant': '0ms',
         'fast': '150ms',
         'DEFAULT': '200ms',
@@ -258,7 +257,7 @@ export default {
       },
       
       transitionTimingFunction: {
-        'elevenlabs': elevenlabsTokens.transitions.easing,
+        'elevenlabs': designTokens.transitions.easing.default,
         'ease-out': 'cubic-bezier(0, 0, 0.2, 1)',
         'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
         'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',

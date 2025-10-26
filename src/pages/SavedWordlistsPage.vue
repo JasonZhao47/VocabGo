@@ -1,8 +1,9 @@
 <template>
-  <div class="wordlists-page">
+  <div class="page-container">
     <!-- Header with proper semantic HTML (Requirement 13.2) -->
-    <header data-animate-child class="wordlists-header">
-      <h1 id="page-title" class="wordlists-title">Saved Wordlists</h1>
+    <header data-animate-child class="page-header">
+      <h1 id="page-title" class="page-title">Saved Wordlists</h1>
+      <p class="page-subtitle">Manage, share, and download your vocabulary collections</p>
       
       <!-- Search bar with proper ARIA labels (Requirement 13.2) -->
       <div class="search-container" role="search">
@@ -76,24 +77,77 @@
       <!-- Custom actions slot -->
       <template #actions="{ row }">
         <div class="table-action-buttons">
-          <ActionButton
-            icon="📥"
-            label="Download"
-            @click="handleExport(row)"
-          />
-          <ActionButton
-            icon="🎯"
-            label="Practice"
-            :disabled="row.wordCount < 4 || isGenerating"
-            :loading="isGenerating"
-            @click="generateAndDownload(row)"
-          />
-          <ActionButton
-            icon="🗑️"
-            label="Delete"
-            variant="danger"
-            @click="confirmDelete(row.id, row.filename)"
-          />
+          <!-- Share Icon Button -->
+          <button
+            class="action-icon-btn"
+            :aria-label="`Share ${row.filename}`"
+            title="Share with students"
+            @click.stop="toggleExpanded(row.id)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+          </button>
+          
+          <!-- Download Icon Button with Dropdown -->
+          <div class="download-dropdown-container">
+            <button
+              class="action-icon-btn"
+              :aria-label="`Download options for ${row.filename}`"
+              :aria-expanded="downloadMenuOpen === row.id"
+              title="Download options"
+              @click.stop="toggleDownloadMenu(row.id)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+            </button>
+            
+            <!-- Dropdown Menu -->
+            <Transition name="dropdown">
+              <div
+                v-if="downloadMenuOpen === row.id"
+                class="download-dropdown-menu"
+                role="menu"
+                @click.stop
+              >
+                <button
+                  class="download-menu-item"
+                  role="menuitem"
+                  @click="handleDownloadWordlist(row)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Wordlist (CSV)</span>
+                </button>
+                <button
+                  class="download-menu-item"
+                  role="menuitem"
+                  :disabled="row.wordCount < 4 || isGenerating"
+                  @click="handleDownloadPractice(row)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <span>Practice Questions (HTML)</span>
+                  <span v-if="row.wordCount < 4" class="menu-item-note">(Need 4+ words)</span>
+                </button>
+              </div>
+            </Transition>
+          </div>
+          
+          <!-- Delete Icon Button -->
+          <button
+            class="action-icon-btn action-icon-btn-danger"
+            :aria-label="`Delete ${row.filename}`"
+            title="Delete wordlist"
+            @click.stop="confirmDelete(row.id, row.filename)"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
         </div>
       </template>
       </DataTable>
@@ -214,7 +268,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch, h, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, h, defineAsyncComponent } from 'vue'
 import { useWordlist } from '@/composables/useWordlist'
 import { usePracticeQuestions } from '@/composables/usePracticeQuestions'
 import type { WordlistRecord } from '@/state/wordlistsState'
@@ -258,6 +312,7 @@ const deleteTarget = ref<{ id: string; filename: string } | null>(null)
 const exportingId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 const hasAnimated = ref(false)
+const downloadMenuOpen = ref<string | null>(null)
 
 // Filtered wordlists based on search query
 const filteredWordlists = computed(() => {
@@ -294,7 +349,7 @@ const tableColumns = computed(() => [
     label: 'Word Count',
     align: 'center' as const,
     width: '15%',
-    render: (value: number) => h('span', { class: 'table-word-count' }, `${value} words`),
+    render: (value: number) => h('span', { class: 'table-word-count' }, `${value}`),
   },
   {
     key: 'is_shared',
@@ -347,6 +402,14 @@ const handleRowClick = (row: WordlistRecord) => {
 // Load wordlists on mount
 onMounted(async () => {
   await loadWordlists()
+  
+  // Close download menu when clicking outside
+  document.addEventListener('click', closeDownloadMenu)
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('click', closeDownloadMenu)
 })
 
 /**
@@ -534,6 +597,56 @@ async function handleExport(wordlist: WordlistRecord) {
 }
 
 /**
+ * Toggle download menu
+ */
+function toggleDownloadMenu(id: string) {
+  downloadMenuOpen.value = downloadMenuOpen.value === id ? null : id
+}
+
+/**
+ * Close download menu when clicking outside
+ */
+function closeDownloadMenu() {
+  downloadMenuOpen.value = null
+}
+
+/**
+ * Handle download wordlist (CSV)
+ */
+async function handleDownloadWordlist(wordlist: WordlistRecord) {
+  closeDownloadMenu()
+  exportingId.value = wordlist.id
+  await downloadWordlist(wordlist)
+  exportingId.value = null
+}
+
+/**
+ * Handle download practice questions (HTML)
+ */
+async function handleDownloadPractice(wordlist: WordlistRecord) {
+  closeDownloadMenu()
+  if (wordlist.wordCount < 4) {
+    showToast('Need at least 4 words to generate practice questions', 'error')
+    return
+  }
+  
+  try {
+    showToast('Generating practice questions...', 'info')
+    // Convert Date to string for service compatibility
+    const wordlistForService = {
+      ...wordlist,
+      createdAt: wordlist.createdAt.toISOString(),
+      shared_at: wordlist.shared_at?.toISOString(),
+    }
+    await generateAndDownload(wordlistForService)
+    showToast('Practice questions downloaded successfully!', 'success')
+  } catch (error) {
+    console.error('Error generating practice questions:', error)
+    showToast('Failed to generate practice questions. Please try again.', 'error')
+  }
+}
+
+/**
  * Handle share enabled event
  */
 function handleShareEnabled(wordlistId: string, shareToken: string) {
@@ -562,47 +675,7 @@ function handleShareDisabled(wordlistId: string) {
 
 <style scoped>
 /* Mobile-first Responsive Design - ElevenLabs Styling */
-
-/* Page Container - ElevenLabs exact: max-width 1200px, consistent padding */
-.wordlists-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 64px 48px 48px;
-  background: rgb(255, 255, 255);
-  min-height: 100vh;
-}
-
-@media (max-width: 767px) {
-  .wordlists-page {
-    padding: 48px 24px 32px;
-  }
-}
-
-/* Header Section */
-.wordlists-header {
-  margin-bottom: 48px;
-}
-
-@media (max-width: 767px) {
-  .wordlists-header {
-    margin-bottom: 32px;
-  }
-}
-
-.wordlists-title {
-  font-size: 48px;
-  font-weight: 700;
-  color: rgb(0, 0, 0);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 767px) {
-  .wordlists-title {
-    font-size: 32px;
-  }
-}
+/* Page Container and Header - using global .page-container, .page-header, .page-title, .page-subtitle */
 
 /* Search Container */
 .search-container {
@@ -775,70 +848,176 @@ function handleShareDisabled(wordlistId: string) {
   text-align: center;
 }
 
-/* Table Action Buttons */
+/* Table Action Buttons - ElevenLabs Style */
 .table-action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+/* Action Icon Buttons - ElevenLabs exact styling */
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+.action-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.action-icon-btn-danger:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+}
+
+.action-icon-btn:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+/* Download Dropdown Container */
+.download-dropdown-container {
+  position: relative;
+}
+
+/* Download Dropdown Menu */
+.download-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 220px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 50;
+}
+
+/* Download Menu Item */
+.download-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111827;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-align: left;
+}
+
+.download-menu-item:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.download-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.download-menu-item svg {
+  flex-shrink: 0;
+  color: #6B7280;
+}
+
+.download-menu-item span {
+  flex: 1;
+}
+
+.menu-item-note {
+  font-size: 12px;
+  color: #6B7280;
+  font-style: italic;
+}
+
+/* Dropdown Transition */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 150ms ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* Table Cell Styling - ElevenLabs typography */
 :deep(.table-date) {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 400;
-  color: rgb(115, 115, 115);
+  color: #6B7280;
   letter-spacing: -0.005em;
 }
 
+/* Word Count - Plain gray text, NO background (ElevenLabs exact) */
 :deep(.table-word-count) {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 16px;
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: rgb(255, 255, 255);
-  background: rgb(0, 0, 0);
-  border-radius: 9999px;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 400;
+  color: #6B7280;
+  letter-spacing: -0.005em;
 }
 
-:deep(.table-word-count:hover) {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Share Status Badge - ElevenLabs styling */
+/* Share Status Badge - Subtle ElevenLabs styling */
 :deep(.share-status-badge) {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
+  gap: 4px;
+  padding: 4px 10px;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  border-radius: 9999px;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  border-radius: 6px;
+  transition: all 150ms ease;
 }
 
 :deep(.share-status-active) {
-  color: rgb(255, 255, 255);
-  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.4);
+  color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid rgba(5, 150, 105, 0.2);
 }
 
 :deep(.share-status-active:hover) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.5);
+  background: rgba(5, 150, 105, 0.15);
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+:deep(.share-status-active svg) {
+  width: 12px;
+  height: 12px;
+  color: #059669;
 }
 
 :deep(.share-status-inactive) {
-  color: rgb(115, 115, 115);
-  background: rgb(242, 242, 242);
+  color: #6B7280;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 :deep(.share-status-inactive:hover) {
-  background: rgb(229, 229, 229);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 /* Expanded Wordlist View - ElevenLabs card styling */

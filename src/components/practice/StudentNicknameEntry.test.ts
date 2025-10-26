@@ -207,6 +207,7 @@ describe('StudentNicknameEntry', () => {
       await nextTick()
 
       // Manually set submitting state via exposed method
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setSubmitting(true)
       await nextTick()
 
@@ -220,6 +221,7 @@ describe('StudentNicknameEntry', () => {
       await input.setValue('Amy')
       await nextTick()
 
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setSubmitting(true)
       await nextTick()
 
@@ -229,6 +231,7 @@ describe('StudentNicknameEntry', () => {
 
   describe('Error Handling', () => {
     it('displays validation error', async () => {
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setError('Invalid nickname format')
       await nextTick()
 
@@ -273,6 +276,7 @@ describe('StudentNicknameEntry', () => {
     it('resets state when modal closes', async () => {
       const input = wrapper.find('input[type="text"]')
       await input.setValue('Amy')
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setError('Test error')
       await nextTick()
 
@@ -282,6 +286,7 @@ describe('StudentNicknameEntry', () => {
       await wrapper.setProps({ modelValue: true })
       await nextTick()
 
+      // @ts-expect-error - HTMLInputElement has value property
       expect(wrapper.find('input[type="text"]').element.value).toBe('')
       expect(wrapper.text()).not.toContain('Test error')
     })
@@ -320,15 +325,22 @@ describe('StudentNicknameEntry', () => {
 
   describe('Exposed Methods', () => {
     it('exposes setSubmitting method', () => {
+      // @ts-expect-error - Accessing exposed property from defineExpose
       expect(wrapper.vm.setSubmitting).toBeDefined()
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setSubmitting(true)
+      // @ts-expect-error - Accessing exposed property from defineExpose
       expect(wrapper.vm.isSubmitting).toBe(true)
     })
 
     it('exposes setError method', () => {
+      // @ts-expect-error - Accessing exposed property from defineExpose
       expect(wrapper.vm.setError).toBeDefined()
+      // @ts-expect-error - Accessing exposed property from defineExpose
       wrapper.vm.setError('Test error')
+      // @ts-expect-error - Accessing exposed property from defineExpose
       expect(wrapper.vm.validationError).toBe('Test error')
+      // @ts-expect-error - Accessing exposed property from defineExpose
       expect(wrapper.vm.isSubmitting).toBe(false)
     })
   })

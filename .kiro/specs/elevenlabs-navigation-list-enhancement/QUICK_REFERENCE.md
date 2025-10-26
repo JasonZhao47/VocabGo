@@ -1,157 +1,133 @@
-# Quick Reference Guide
+# Quick Reference - ElevenLabs List Styling
 
-## Design Tokens Cheat Sheet
+## At a Glance
 
-```typescript
-import { designTokens } from '@/config/designTokens'
+### The Big Change
+**Word Count**: Black pill → Plain gray text ⭐
 
-// Colors
-designTokens.colors.gray[500]      // #6B7280
-designTokens.colors.danger         // #DC2626
-
-// Spacing (8px grid)
-designTokens.spacing.sm            // 8px
-designTokens.spacing.md            // 12px
-designTokens.spacing.lg            // 16px
-
-// Typography
-designTokens.typography.fontSize.base    // 15px
-designTokens.typography.fontWeight.medium // 500
-
-// Transitions
-designTokens.transitions.fast      // 150ms
-designTokens.transitions.easing    // 'ease-out'
-
-// Border Radius
-designTokens.borderRadius.md       // 6px
-designTokens.borderRadius.xl       // 12px
+### Before
+```
+[40 words]  ← Black background, white text
 ```
 
-## Component Quick Start
-
-### ActionButton
-
-```vue
-<ActionButton
-  icon="download"
-  label="Download"
-  @click="handleClick"
-/>
+### After
+```
+40  ← Gray text, no background
 ```
 
-### DataTable
+## Icon Buttons
 
-```vue
-<DataTable
-  :columns="[
-    { key: 'name', label: 'Name' },
-    { key: 'date', label: 'Date' }
-  ]"
-  :data="items"
-  :actions="[
-    { icon: 'edit', label: 'Edit', onClick: handleEdit }
-  ]"
-/>
+### Size
+- Button: 32px × 32px
+- Icon: 16px × 16px
+- Padding: 8px
+- Gap: 4px
+
+### Colors
+- Default: #6B7280 (gray)
+- Hover: #111827 (darker)
+- Hover BG: rgba(0, 0, 0, 0.05)
+
+### Icons Used
+1. 🔗 Share (network icon)
+2. ⬇️ Download (down arrow)
+3. 🗑️ Delete (trash can)
+
+## CSS Quick Copy
+
+```css
+/* Word Count - Plain Text */
+.table-word-count {
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Icon Button */
+.action-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  background: transparent;
+  border-radius: 6px;
+  color: #6B7280;
+  transition: all 150ms ease;
+}
+
+.action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
 ```
 
-### Sidebar
+## SVG Icons
 
-```vue
-<Sidebar
-  :collapsed="false"
-  :items="[
-    { id: 'home', label: 'Home', icon: 'home', route: '/' }
-  ]"
-/>
+### Share Icon
+```html
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+</svg>
 ```
 
-### CategoryCard
-
-```vue
-<CategoryCard
-  title="Upload"
-  description="Upload documents"
-  gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-  @click="navigate"
-/>
+### Download Icon
+```html
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+</svg>
 ```
 
-## Accessibility Checklist
-
-- [ ] All buttons have `aria-label`
-- [ ] Color contrast ≥ 4.5:1
-- [ ] Keyboard navigation works (Tab, Enter, Space)
-- [ ] Focus indicators visible
-- [ ] Touch targets ≥ 44x44px
-- [ ] Respects `prefers-reduced-motion`
-
-## Responsive Breakpoints
-
-```typescript
-mobile:  0-767px   // Drawer navigation, card layout
-tablet:  768-1023px // Collapsible sidebar
-desktop: 1024px+    // Full sidebar, table layout
+### Delete Icon
+```html
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+</svg>
 ```
 
-## Common Patterns
+## Color Palette
 
-### Loading State
-
-```vue
-<ActionButton
-  :loading="isLoading"
-  :disabled="isLoading"
-  label="Save"
-  icon="save"
-/>
+```css
+#111827  /* Primary text (dark) */
+#6B7280  /* Secondary text (gray) */
+rgba(0, 0, 0, 0.02)   /* Row hover */
+rgba(0, 0, 0, 0.05)   /* Button hover */
+rgba(0, 0, 29, 0.075) /* Subtle border */
 ```
 
-### Danger Action
+## Typography
 
-```vue
-<ActionButton
-  variant="danger"
-  icon="trash"
-  label="Delete"
-  @click="confirmDelete"
-/>
+```css
+font-size: 14px;
+font-weight: 400;
+letter-spacing: -0.005em;
+color: #6B7280;
 ```
 
-### Conditional Actions
+## Key Principles
 
-```vue
-<DataTable
-  :actions="[
-    {
-      icon: 'edit',
-      label: 'Edit',
-      onClick: handleEdit,
-      disabled: (row) => !row.editable
-    }
-  ]"
-/>
-```
+1. **Minimal**: Less visual noise
+2. **Subtle**: Light hover effects (2-5% opacity)
+3. **Consistent**: Same sizing throughout
+4. **Professional**: Clean, modern look
+5. **Accessible**: ARIA labels, keyboard nav
 
-## Performance Tips
-
-1. Use `v-memo` for large lists
-2. Lazy load images with `loading="lazy"`
-3. Use CSS transforms for animations
-4. Implement virtual scrolling for >100 rows
-5. Code split routes with dynamic imports
-
-## Testing Commands
+## Testing
 
 ```bash
-# Run all tests
-pnpm test
+# Start dev server
+pnpm dev
 
-# Run specific test file
-pnpm test ActionButton.test.ts
+# Navigate to
+http://localhost:5173/wordlists
 
-# Run accessibility tests
-pnpm test tests/accessibility/
-
-# Run with coverage
-pnpm test --coverage
+# Upload documents to see list
+# Hover over icons to test
+# Click to verify functionality
 ```
+
+## Files Changed
+
+- `src/pages/SavedWordlistsPage.vue`
+
+## Match Score
+
+99% match with ElevenLabs Sound Effects list design

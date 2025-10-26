@@ -310,11 +310,7 @@ async function handleGenerateQuestions() {
     const result = await generateFromMistakes(10)
 
     if (result) {
-      showToast({
-        type: 'success',
-        message: `Generated ${result.metadata.questionCounts.matching + result.metadata.questionCounts.fillBlank + result.metadata.questionCounts.multipleChoice} questions from top mistakes!`,
-        duration: 3000,
-      })
+      showToast(`Generated ${result.metadata.questionCounts.matching + result.metadata.questionCounts.fillBlank + result.metadata.questionCounts.multipleChoice} questions from top mistakes!`, 'success', 3000)
 
       // Navigate to practice page with generated questions
       // You could store the questions in state or pass them via route
@@ -323,18 +319,10 @@ async function handleGenerateQuestions() {
         params: { wordlistId: wordlistId.value },
       })
     } else {
-      showToast({
-        type: 'error',
-        message: error.value || 'Failed to generate questions',
-        duration: 5000,
-      })
+      showToast(error.value || 'Failed to generate questions', 'error', 5000)
     }
   } catch (err) {
-    showToast({
-      type: 'error',
-      message: 'An error occurred while generating questions',
-      duration: 5000,
-    })
+    showToast('An error occurred while generating questions', 'error', 5000)
   } finally {
     isGenerating.value = false
   }
@@ -349,7 +337,7 @@ function handleExportCSV() {
   try {
     // Build CSV content
     const headers = ['Word', 'Translation', 'Students Affected', 'Total Mistakes', 'Avg per Student']
-    const rows = stats.value.aggregateMistakes.map(m => [
+    const rows = [...stats.value.aggregateMistakes].map(m => [
       m.word,
       m.translation,
       m.studentCount.toString(),
@@ -371,17 +359,9 @@ function handleExportCSV() {
     link.click()
     URL.revokeObjectURL(url)
 
-    showToast({
-      type: 'success',
-      message: 'CSV exported successfully!',
-      duration: 3000,
-    })
+    showToast('CSV exported successfully!', 'success', 3000)
   } catch (err) {
-    showToast({
-      type: 'error',
-      message: 'Failed to export CSV',
-      duration: 5000,
-    })
+    showToast('Failed to export CSV', 'error', 5000)
   }
 }
 

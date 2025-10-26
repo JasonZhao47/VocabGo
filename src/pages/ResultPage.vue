@@ -189,18 +189,18 @@ function getDocumentType(filename: string): string {
 <style scoped>
 /* Mobile-first Responsive Design (Task 8.3) */
 
-/* Page Container - ElevenLabs exact: 752px max-width, 48px horizontal, 64px top */
+/* Page Container - Aligned with UploadPage styling */
 .result-page {
   max-width: 752px;
   margin: 0 auto;
-  padding: 64px 48px 48px;
-  background-color: #F9FAFB;
+  padding: 64px 20px 20px;
+  background-color: #FFFFFF;
   min-height: 100vh;
 }
 
 @media (max-width: 767px) {
   .result-page {
-    padding: 48px 24px 32px;
+    padding: 24px 16px 16px;
   }
 }
 

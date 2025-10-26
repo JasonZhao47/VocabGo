@@ -299,6 +299,59 @@
 
 @layer components {
   /* ============================================
+     PAGE LAYOUT COMPONENTS
+     ============================================ */
+
+  /* Global Page Container - ElevenLabs Style */
+  .page-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 20px 20px;
+    background: rgb(255, 255, 255);
+    min-height: 100vh;
+  }
+
+  @media (min-width: 768px) {
+    .page-container {
+      padding: 64px 32px 32px;
+    }
+  }
+
+  /* Global Page Header - ElevenLabs Style */
+  .page-header {
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 768px) {
+    .page-title {
+      font-size: 30px;
+    }
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+    font-weight: 400;
+    color: rgb(115, 115, 115);
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+    margin: 0 0 24px 0;
+  }
+
+  @media (min-width: 768px) {
+    .page-subtitle {
+      font-size: 18px;
+    }
+  }
+
+  /* ============================================
      BUTTON COMPONENTS
      ============================================ */
 

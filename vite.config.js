@@ -44,10 +44,18 @@ export default defineConfig({
     // CSS optimization
     css: {
         devSourcemap: false,
-        postcss: {
-            plugins: [
-            // Tailwind will be processed by PostCSS
-            ]
+        postcss: './postcss.config.js',
+        // CSS modules configuration
+        modules: {
+            localsConvention: 'camelCase',
+            generateScopedName: '[name]__[local]___[hash:base64:5]'
+        },
+        // Preprocessor options
+        preprocessorOptions: {
+            css: {
+                // Charset will be added by cssnano
+                charset: false
+            }
         }
     }
 });

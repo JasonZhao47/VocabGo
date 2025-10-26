@@ -6,7 +6,6 @@
  */
 
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import uploadState, {
   startUpload,
   setProcessing,
@@ -17,11 +16,8 @@ import uploadState, {
   canUpload as canUploadComputed,
 } from '@/state/uploadState'
 import { processDocument, validateFile, type ValidationResult } from '@/services/uploadService'
-import { useToast } from '@/composables/useToast'
 
 export function useUpload() {
-  const router = useRouter()
-  const toast = useToast()
 
   // Expose computed properties from state
   const canUpload = canUploadComputed
@@ -45,17 +41,12 @@ export function useUpload() {
     const validation = validateUploadFile(file)
     if (!validation.valid) {
       setError(validation.error)
-      toast.error(validation.error)
       return
     }
 
     try {
       // Start upload
       startUpload(file)
-      toast.info('Uploading document...')
-
-      // Navigate to processing page
-      await router.push('/processing')
 
       // Set processing state with initial stage
       setProcessing('cleaning')
@@ -84,13 +75,9 @@ export function useUpload() {
 
       // Set completed state with results
       setCompleted(result.words)
-      toast.success('Document processed successfully!')
-
-      // Auto-navigation to results is handled by ProcessingPage watcher
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
-      toast.error(`Upload failed: ${errorMessage}`)
       console.error('Upload error:', err)
     }
   }

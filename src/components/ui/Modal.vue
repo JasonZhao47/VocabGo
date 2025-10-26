@@ -48,7 +48,7 @@
               <button
                 v-if="closable"
                 type="button"
-                class="ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-150"
+                class="modal-close-button"
                 @click="close"
                 aria-label="Close modal"
               >
@@ -266,6 +266,37 @@ onUnmounted(() => {
   padding: 1rem;
 }
 
+@media (max-width: 767px) {
+  .modal-overlay {
+    padding: 0.5rem; /* Reduced padding on mobile */
+  }
+}
+
+/* Close button with touch-friendly sizing (Requirements: 6.3) */
+.modal-close-button {
+  margin-left: 1rem;
+  padding: 0.5rem;
+  color: rgb(156, 163, 175); /* gray-400 */
+  border-radius: 0.5rem;
+  transition: all 150ms ease-in-out;
+  min-width: 44px; /* Touch-friendly minimum */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-button:hover {
+  color: rgb(75, 85, 99); /* gray-600 */
+  background-color: rgb(243, 244, 246); /* gray-100 */
+}
+
+@media (max-width: 767px) {
+  .modal-close-button {
+    margin-left: 0.5rem;
+  }
+}
+
 /* Modal backdrop - dark overlay with smooth opacity transition */
 .modal-backdrop {
   position: absolute;
@@ -295,8 +326,23 @@ onUnmounted(() => {
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); /* 300ms smooth fade-in */
 }
 
+/* Responsive modal adjustments for mobile (Requirements: 6.1, 6.2, 6.4) */
+@media (max-width: 767px) {
+  .modal-card {
+    padding: 24px; /* Reduced padding on mobile */
+    max-width: calc(100vw - 32px); /* Ensure modal fits on small screens */
+    margin: 16px;
+  }
+}
+
 .modal-header {
   @apply mb-4 flex-shrink-0;
+}
+
+@media (max-width: 767px) {
+  .modal-header {
+    @apply mb-3;
+  }
 }
 
 .modal-content {
@@ -307,6 +353,13 @@ onUnmounted(() => {
   @apply mt-6 flex-shrink-0;
   padding-top: 24px;
   border-top: 1px solid rgb(242, 242, 242);
+}
+
+@media (max-width: 767px) {
+  .modal-footer {
+    @apply mt-4;
+    padding-top: 16px;
+  }
 }
 
 /* Transition styles with 300ms duration and smooth easing */

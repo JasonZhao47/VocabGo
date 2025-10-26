@@ -1,11 +1,17 @@
 <template>
-  <div class="upload-page">
+  <div class="page-container">
+    <!-- Processing Modal -->
+    <ProcessingModal 
+      v-model="showProcessingModal"
+      @retry="handleRetry"
+    />
+
     <!-- Main Content Area -->
     <main class="upload-main">
       <!-- Page Header -->
-      <header class="upload-header">
-        <h1 id="page-title" class="upload-title">Upload Document</h1>
-        <p id="page-description" class="upload-subtitle">Extract vocabulary from your reading materials</p>
+      <header class="page-header">
+        <h1 id="page-title" class="page-title">Upload Document</h1>
+        <p id="page-description" class="page-subtitle">Extract vocabulary from your reading materials</p>
       </header>
 
       <!-- Category Cards - Horizontal Scroll -->
@@ -132,7 +138,7 @@
               </div>
             </Transition>
 
-            <!-- Upload Button (moved from footer) -->
+            <!-- Upload Button (ElevenLabs style) -->
             <div class="dropzone-button-container">
               <Button
                 variant="secondary"
@@ -143,11 +149,12 @@
                 @click.stop="handleUpload"
                 class="upload-button"
               >
-                <svg v-if="!isProcessing" class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span v-if="isProcessing">Processing...</span>
-                <span v-else>Upload Document</span>
+                <template v-if="!isProcessing" #icon>
+                  <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </template>
+                {{ isProcessing ? 'Processing...' : 'Upload Document' }}
               </Button>
             </div>
           </div>
@@ -178,10 +185,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUpload } from '@/composables/useUpload'
+import { useToast } from '@/composables/useToast'
+import uploadState, { 
+  isUploading, 
+  isProcessing as isProcessingState, 
+  isCompleted, 
+  hasError 
+} from '@/state/uploadState'
 import Button from '@/components/ui/Button.vue'
+import ProcessingModal from '@/components/processing/ProcessingModal.vue'
 
+const router = useRouter()
+const toast = useToast()
 const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -277,6 +295,47 @@ const canUploadFile = computed(() => {
   return canUpload.value && selectedFile.value !== null && !validationError.value && !isProcessing.value
 })
 
+// Modal visibility - show when uploading, processing, or has error
+const showProcessingModal = computed({
+  get: () => isUploading.value || isProcessingState.value || hasError.value,
+  set: (value: boolean) => {
+    // Allow closing modal only when not actively processing
+    if (!value && !isUploading.value && !isProcessingState.value) {
+      resetUpload()
+      selectedFile.value = null
+      validationError.value = null
+    }
+  }
+})
+
+// Handle retry action from modal
+function handleRetry() {
+  resetUpload()
+  selectedFile.value = null
+  validationError.value = null
+}
+
+// Watch for completion and handle success flow
+watch(isCompleted, (completed) => {
+  if (completed) {
+    // Close modal after 500ms delay
+    setTimeout(() => {
+      // Show success toast
+      toast.success('Document processed successfully!')
+      
+      // Navigate to result page
+      router.push('/result')
+      
+      // Reset state after navigation
+      setTimeout(() => {
+        resetUpload()
+        selectedFile.value = null
+        validationError.value = null
+      }, 100)
+    }, 500)
+  }
+})
+
 function triggerFileInput() {
   if (!canUpload.value || isProcessing.value) return
   fileInput.value?.click()
@@ -349,51 +408,10 @@ function formatFileSize(bytes: number): string {
 <style scoped>
 /* ===== ELEVENLABS DESIGN SYSTEM ===== */
 
-/* Page Layout */
-.upload-page {
-  min-height: 100vh;
-  background-color: #FFFFFF;
-  display: flex;
-  flex-direction: column;
-}
-
+/* Page Layout - using global .page-container */
 .upload-main {
   flex: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
   width: 100%;
-}
-
-@media (min-width: 768px) {
-  .upload-main {
-    padding: 32px 24px;
-  }
-}
-
-/* Header */
-.upload-header {
-  margin-bottom: 32px;
-}
-
-.upload-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-@media (min-width: 768px) {
-  .upload-title {
-    font-size: 30px;
-  }
-}
-
-.upload-subtitle {
-  font-size: 14px;
-  color: #6B7280;
-  line-height: 1.5;
 }
 
 /* Category Section */
@@ -655,10 +673,11 @@ function formatFileSize(bytes: number): string {
   flex-shrink: 0;
 }
 
-/* Dropzone Button Container */
+/* Dropzone Button Container - ElevenLabs style */
 .dropzone-button-container {
   width: 100%;
-  max-width: 320px;
+  display: flex;
+  justify-content: center;
   margin-top: 8px;
 }
 
@@ -667,12 +686,14 @@ function formatFileSize(bytes: number): string {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
+  /* ElevenLabs: auto width with padding, not full width */
+  width: auto;
+  min-width: 180px;
 }
 
 .button-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Transitions */

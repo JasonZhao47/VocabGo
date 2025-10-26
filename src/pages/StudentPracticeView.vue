@@ -203,11 +203,7 @@ async function handleNicknameSubmit(nickname: string) {
         localStorage.setItem('current_practice_wordlist_id', response.wordlist.id)
       }
       
-      showToast({
-        type: 'success',
-        message: `Welcome, ${nickname}! Let's start practicing.`,
-        duration: 3000,
-      })
+      showToast(`Welcome, ${nickname}! Let's start practicing.`, 'success', 3000)
     } else {
       const errorMessage = response.error?.message || 'Failed to register session'
       handleNicknameError(errorMessage)
@@ -232,11 +228,7 @@ function handlePracticeComplete(score: number, correct: number, total: number) {
  * Handle nickname entry error
  */
 function handleNicknameError(error: string) {
-  showToast({
-    type: 'error',
-    message: error,
-    duration: 5000,
-  })
+  showToast(error, 'error', 5000)
 }
 
 /**
@@ -258,15 +250,22 @@ async function initializePracticeView() {
 // Initialize on mount
 onMounted(() => {
   if (!shareToken.value) {
-    showToast({
-      type: 'error',
-      message: 'Invalid share link. Please check the URL.',
-      duration: 5000,
-    })
+    showToast('Invalid share link. Please check the URL.', 'error', 5000)
     return
   }
 
   initializePracticeView()
+})
+
+// Expose state and methods for testing
+defineExpose({
+  wordlist,
+  totalQuestions: computed(() => allQuestions.value.length),
+  answeredCount: computed(() => 0), // This would need to be tracked if needed
+  progressPercentage: computed(() => 0), // This would need to be calculated if needed
+  personalMistakes,
+  handleNicknameSubmit,
+  showNicknameModal,
 })
 </script>
 

@@ -164,20 +164,12 @@ async function handleEnableSharing() {
     
     emit('share-enabled', result.shareToken, result.shareUrl)
     
-    showToast({
-      type: 'success',
-      message: 'Sharing enabled! Share link is ready to copy.',
-      duration: 3000,
-    })
+    showToast('Sharing enabled! Share link is ready to copy.', 'success', 3000)
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to enable sharing'
     error.value = errorMessage
     
-    showToast({
-      type: 'error',
-      message: errorMessage,
-      duration: 5000,
-    })
+    showToast(errorMessage, 'error', 5000)
   } finally {
     loading.value = false
   }
@@ -210,11 +202,7 @@ async function handleCopyUrl() {
       )
     }
     
-    showToast({
-      type: 'success',
-      message: 'Share link copied to clipboard!',
-      duration: 2000,
-    })
+    showToast('Share link copied to clipboard!', 'success', 2000)
     
     // Reset success state after 2 seconds
     setTimeout(() => {
@@ -223,11 +211,7 @@ async function handleCopyUrl() {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to copy share URL'
     
-    showToast({
-      type: 'error',
-      message: errorMessage,
-      duration: 5000,
-    })
+    showToast(errorMessage, 'error', 5000)
   }
 }
 
@@ -246,20 +230,12 @@ async function handleDisableSharing() {
     
     emit('share-disabled')
     
-    showToast({
-      type: 'success',
-      message: 'Sharing disabled successfully.',
-      duration: 3000,
-    })
+    showToast('Sharing disabled successfully.', 'success', 3000)
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to disable sharing'
     error.value = errorMessage
     
-    showToast({
-      type: 'error',
-      message: errorMessage,
-      duration: 5000,
-    })
+    showToast(errorMessage, 'error', 5000)
   } finally {
     loading.value = false
   }
@@ -292,7 +268,7 @@ function handleViewStats() {
 }
 
 .share-url-wrapper {
-  @apply flex gap-2 items-start;
+  @apply flex gap-2 items-center;
   @apply relative;
   @apply p-4 rounded-xl;
   @apply bg-gradient-to-r from-purple-50 to-pink-50;
@@ -325,11 +301,11 @@ function handleViewStats() {
 }
 
 .share-actions {
-  @apply flex gap-2 flex-wrap;
+  @apply flex gap-2 items-center;
 }
 
 .view-stats-button {
-  @apply flex-1 sm:flex-initial;
+  @apply flex-shrink-0;
 }
 
 .disable-button {

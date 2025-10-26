@@ -9,7 +9,7 @@
       Skip to main content
     </a>
     
-    <!-- Sidebar navigation (hidden for student view) -->
+    <!-- Sidebar navigation -->
     <Sidebar
       v-if="!isStudentView"
       v-model="isMobileSidebarOpen"
@@ -17,7 +17,8 @@
       :items="navigationItems"
     />
     
-    <!-- Fixed top navbar (hidden for student view) -->
+    <!-- Fixed top navbar (hidden) -->
+    <!--
     <Header
       v-if="!isStudentView"
       :sidebar-collapsed="sidebarCollapsed"
@@ -26,11 +27,12 @@
       @toggle-sidebar="toggleDesktopSidebar"
     >
       <template #actions>
-        <!-- Future: Add action buttons like Feedback, Documentation -->
+        Future: Add action buttons like Feedback, Documentation
       </template>
     </Header>
+    -->
     
-    <!-- Main layout with sidebar and navbar offset -->
+    <!-- Main layout with sidebar but no navbar -->
     <div :class="['app-layout', { 'app-layout--collapsed': sidebarCollapsed, 'app-layout--fullscreen': isStudentView }]">
       <!-- Main content -->
       <main id="main-content" tabindex="-1" class="app-content">
@@ -209,11 +211,11 @@ const onLeave = (el: Element, done: () => void) => {
   display: none;
 }
 
-/* App layout with sidebar and navbar offset */
+/* App layout with sidebar but no navbar */
 .app-layout {
   margin-left: 260px; /* Expanded sidebar width */
-  margin-top: 64px; /* Fixed navbar height */
-  min-height: calc(100vh - 64px); /* Account for navbar */
+  margin-top: 0; /* No navbar */
+  min-height: 100vh;
   transition: margin-left 200ms ease-out;
 }
 
@@ -257,19 +259,13 @@ const onLeave = (el: Element, done: () => void) => {
 .app-content {
   /* White background to match sidebar */
   background: #FFFFFF;
-  min-height: calc(100vh - 64px);
-  padding: 24px;
+  min-height: 100vh;
+  padding: 0;
 }
 
 /* Focus styles for main content when skipped to */
 .app-content:focus {
   outline: none;
-}
-
-/* Remove padding for fullscreen student view */
-.app-layout--fullscreen .app-content {
-  padding: 0;
-  min-height: 100vh;
 }
 
 /* Mobile responsive - no sidebar offset, full width */
@@ -280,7 +276,7 @@ const onLeave = (el: Element, done: () => void) => {
   
   .app-layout {
     margin-left: 0;
-    margin-top: 64px; /* Keep navbar offset on mobile */
+    margin-top: 0; /* No navbar on mobile either */
   }
   
   .app-layout--collapsed {

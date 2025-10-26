@@ -89,7 +89,8 @@ const selectedOption = ref<string | null>(null)
 function getOptionClass(option: string) {
   if (!answered.value) return ''
   if (props.question.type === 'multiple-choice') {
-    if (option === props.question.correctAnswer) return 'correct'
+    const correctOption = props.question.options.find(opt => opt.isCorrect)
+    if (correctOption && option === correctOption.text) return 'correct'
     if (option === selectedOption.value && !isCorrect.value) return 'incorrect'
   }
   return ''

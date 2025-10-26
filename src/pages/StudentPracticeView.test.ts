@@ -7,7 +7,13 @@
  * - Wordlist display
  * - Progress tracking
  * - Personal mistakes display
+ * 
+ * Note: This file uses @ts-expect-error comments to access properties exposed via defineExpose().
+ * This is a known limitation of Vue Test Utils + TypeScript where exposed properties
+ * don't automatically update the component's type definition.
  */
+
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
