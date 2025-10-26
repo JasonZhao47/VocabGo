@@ -8,12 +8,24 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { processDocument, validateFile, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE } from './uploadService'
+import { processDocument, validateFile, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE, MAX_DOCX_FILE_SIZE } from './uploadService'
 import * as session from '@/lib/session'
+import * as docxExtractor from './docxExtractor'
 
 // Mock the session module
 vi.mock('@/lib/session', () => ({
   getSessionId: vi.fn(),
+}))
+
+// Mock the docxExtractor module
+vi.mock('./docxExtractor', () => ({
+  extractDocxText: vi.fn(),
+  DocxExtractionError: class DocxExtractionError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'DocxExtractionError'
+    }
+  },
 }))
 
 // Mock fetch globally
@@ -96,7 +108,7 @@ describe('uploadService', () => {
       }
     })
 
-    it('should reject files exceeding max size', () => {
+    it('should reject PDF files exceeding 50MB', () => {
       const largeFile = new File([new ArrayBuffer(MAX_FILE_SIZE + 1)], 'large.pdf', {
         type: 'application/pdf',
       })
@@ -105,8 +117,30 @@ describe('uploadService', () => {
       expect(result.valid).toBe(false)
       if (!result.valid) {
         expect(result.code).toBe('FILE_TOO_LARGE')
-        expect(result.error).toContain('exceeds maximum')
+        expect(result.error).toContain('50MB')
       }
+    })
+
+    it('should reject DOCX files exceeding 5MB', () => {
+      const largeDocx = new File([new ArrayBuffer(MAX_DOCX_FILE_SIZE + 1)], 'large.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      const result = validateFile(largeDocx)
+      
+      expect(result.valid).toBe(false)
+      if (!result.valid) {
+        expect(result.code).toBe('FILE_TOO_LARGE')
+        expect(result.error).toContain('5MB')
+      }
+    })
+
+    it('should accept DOCX files under 5MB', () => {
+      const validDocx = new File([new ArrayBuffer(MAX_DOCX_FILE_SIZE - 1000)], 'valid.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      const result = validateFile(validDocx)
+      
+      expect(result.valid).toBe(true)
     })
 
     it('should reject missing file', () => {
@@ -287,6 +321,99 @@ describe('uploadService', () => {
       
       // Verify only session.getSessionId is called, not any auth methods
       expect(session.getSessionId).toHaveBeenCalled()
+    })
+  })
+
+  describe('hybrid processing - DOCX client-side extraction', () => {
+    beforeEach(() => {
+      // Mock successful extraction
+      vi.mocked(docxExtractor.extractDocxText).mockResolvedValue({
+        text: 'Extracted text from DOCX',
+        metadata: {
+          characterCount: 25,
+          extractionTimeMs: 150,
+        },
+      })
+    })
+
+    it('should use client-side extraction for DOCX files', async () => {
+      const docxFile = new File(['docx content'], 'test.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      
+      await processDocument(docxFile)
+      
+      // Verify extractDocxText was called
+      expect(docxExtractor.extractDocxText).toHaveBeenCalledWith(docxFile)
+    })
+
+    it('should send extractedText payload for DOCX files', async () => {
+      const docxFile = new File(['docx content'], 'test.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      
+      await processDocument(docxFile)
+      
+      const fetchCall = mockFetch.mock.calls[0]
+      const body = JSON.parse(fetchCall[1].body)
+      
+      expect(body).toHaveProperty('extractedText')
+      expect(body.extractedText).toEqual({
+        text: 'Extracted text from DOCX',
+        filename: 'test.docx',
+        documentType: 'docx',
+        metadata: {
+          characterCount: 25,
+          extractionTimeMs: 150,
+        },
+      })
+      expect(body).not.toHaveProperty('file')
+    })
+
+    it('should use server-side extraction for PDF files', async () => {
+      const pdfFile = new File(['pdf content'], 'test.pdf', { type: 'application/pdf' })
+      
+      await processDocument(pdfFile)
+      
+      // Verify extractDocxText was NOT called
+      expect(docxExtractor.extractDocxText).not.toHaveBeenCalled()
+      
+      // Verify file payload was sent
+      const fetchCall = mockFetch.mock.calls[0]
+      const body = JSON.parse(fetchCall[1].body)
+      
+      expect(body).toHaveProperty('file')
+      expect(body).not.toHaveProperty('extractedText')
+    })
+
+    it('should handle DOCX extraction errors gracefully', async () => {
+      const docxFile = new File(['docx content'], 'test.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      
+      vi.mocked(docxExtractor.extractDocxText).mockRejectedValueOnce(
+        new docxExtractor.DocxExtractionError('Failed to extract text from DOCX file. The file may be corrupted.')
+      )
+      
+      await expect(processDocument(docxFile)).rejects.toThrow(
+        'Failed to extract text from DOCX file. The file may be corrupted.'
+      )
+    })
+
+    it('should include all required headers for DOCX processing', async () => {
+      const docxFile = new File(['docx content'], 'test.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      
+      await processDocument(docxFile)
+      
+      const fetchCall = mockFetch.mock.calls[0]
+      const headers = fetchCall[1].headers
+      
+      expect(headers['X-Session-ID']).toBe(mockSessionId)
+      expect(headers['apikey']).toBe(import.meta.env.VITE_SUPABASE_ANON_KEY)
+      expect(headers['Authorization']).toBe(`Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`)
+      expect(headers['Content-Type']).toBe('application/json')
     })
   })
 })

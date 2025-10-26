@@ -227,12 +227,31 @@ const screenReaderAnnouncement = computed(() => {
   return ''
 })
 
-// Processing stages configuration
-const stages = [
-  { id: 'cleaning', label: 'Cleaning' },
-  { id: 'extracting', label: 'Extracting' },
-  { id: 'translating', label: 'Translating' }
-] as const
+// Processing stages configuration - dynamic based on whether client-side extraction is used
+const stages = computed(() => {
+  const currentStage = uploadState.processingStage
+  
+  // Check if we're using client-side extraction (DOCX files)
+  // If current stage is extracting-client, or if we've passed it (cleaning/extracting/translating after client extraction)
+  const isUsingClientExtraction = currentStage === 'extracting-client'
+  
+  if (isUsingClientExtraction) {
+    // Show all stages including client-side extraction
+    return [
+      { id: 'extracting-client', label: 'Extracting' },
+      { id: 'cleaning', label: 'Cleaning' },
+      { id: 'extracting', label: 'Extracting' },
+      { id: 'translating', label: 'Translating' }
+    ] as const
+  }
+  
+  // Default stages without client-side extraction (for non-DOCX files)
+  return [
+    { id: 'cleaning', label: 'Cleaning' },
+    { id: 'extracting', label: 'Extracting' },
+    { id: 'translating', label: 'Translating' }
+  ] as const
+})
 
 // Get current stage label
 const currentStageLabel = computed(() => {
@@ -240,6 +259,7 @@ const currentStageLabel = computed(() => {
   if (!stage) return 'Processing'
   
   const stageMap = {
+    'extracting-client': 'Extracting text from document...',
     cleaning: 'Cleaning Text',
     extracting: 'Extracting Words',
     translating: 'Translating'
@@ -253,7 +273,7 @@ const getStageState = (stageId: string) => {
   const currentStage = uploadState.processingStage
   if (!currentStage) return 'pending'
   
-  const stageOrder = ['cleaning', 'extracting', 'translating']
+  const stageOrder = ['extracting-client', 'cleaning', 'extracting', 'translating']
   const currentIndex = stageOrder.indexOf(currentStage)
   const stageIndex = stageOrder.indexOf(stageId)
   
@@ -268,8 +288,9 @@ const progressPercentage = computed(() => {
   if (!stage) return 0
   
   const stageProgress = {
-    cleaning: 33,
-    extracting: 66,
+    'extracting-client': 25,
+    cleaning: 50,
+    extracting: 75,
     translating: 100
   }
   
@@ -311,6 +332,7 @@ watch(isProcessing, (newValue) => {
 watch(() => uploadState.processingStage, (newStage) => {
   if (newStage) {
     const stageLabels = {
+      'extracting-client': 'Extracting text from document',
       cleaning: 'Cleaning text',
       extracting: 'Extracting words',
       translating: 'Translating words'

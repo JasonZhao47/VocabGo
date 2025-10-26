@@ -10,6 +10,7 @@ import uploadState, {
   startUpload,
   setProcessing,
   setProcessingStage,
+  setExtracting,
   setCompleted,
   setError,
   reset,
@@ -48,12 +49,29 @@ export function useUpload() {
       // Start upload
       startUpload(file)
 
-      // Set processing state with initial stage
-      setProcessing('cleaning')
+      // Check if this is a DOCX file (client-side extraction)
+      const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+      // Set initial processing stage based on file type
+      if (isDocx) {
+        // For DOCX: start with client-side extraction
+        setExtracting()
+      } else {
+        // For other files: start with cleaning (server-side extraction)
+        setProcessing('cleaning')
+      }
 
       // Simulate stage progression (since we don't have real-time updates from Edge Function)
       // In a production system, this would be replaced with polling or WebSocket updates
       const stageSimulation = async () => {
+        if (isDocx) {
+          // Client-side extraction stage (simulate brief extraction time)
+          await new Promise(resolve => setTimeout(resolve, 500))
+          if (uploadState.status === 'processing') {
+            uploadState.processingStage = 'cleaning'
+          }
+        }
+
         // Cleaning stage (simulate 1 second)
         await new Promise(resolve => setTimeout(resolve, 1000))
         if (uploadState.status === 'processing') {

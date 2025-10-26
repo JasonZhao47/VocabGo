@@ -27,10 +27,21 @@ import { translate } from '../_shared/agents/translator.ts'
 
 // Types
 interface ProcessRequest {
-  file: {
+  // Option 1: Binary file (existing)
+  file?: {
     name: string
     type: string
     data: string // base64 encoded
+  }
+  // Option 2: Pre-extracted text (new)
+  extractedText?: {
+    text: string
+    filename: string
+    documentType: 'docx'
+    metadata: {
+      characterCount: number
+      extractionTimeMs: number
+    }
   }
 }
 
@@ -94,15 +105,16 @@ serve(async (req) => {
     }
 
     // Parse request
-    const { file }: ProcessRequest = await req.json()
+    const { file, extractedText }: ProcessRequest = await req.json()
 
-    if (!file || !file.name || !file.type || !file.data) {
+    // Validate that exactly one option is provided
+    if (!file && !extractedText) {
       return new Response(
         JSON.stringify({
           success: false,
           error: {
             code: 'INVALID_REQUEST',
-            message: 'Missing required fields: file.name, file.type, file.data',
+            message: 'Must provide either file or extractedText',
           },
         } as ProcessResponse),
         {
@@ -112,15 +124,13 @@ serve(async (req) => {
       )
     }
 
-    // Validate file type
-    const documentType = SUPPORTED_TYPES[file.type as keyof typeof SUPPORTED_TYPES]
-    if (!documentType) {
+    if (file && extractedText) {
       return new Response(
         JSON.stringify({
           success: false,
           error: {
-            code: 'INVALID_FILE_TYPE',
-            message: `Unsupported file type: ${file.type}. Supported types: PDF, TXT, DOCX, XLSX`,
+            code: 'INVALID_REQUEST',
+            message: 'Cannot provide both file and extractedText',
           },
         } as ProcessResponse),
         {
@@ -130,87 +140,121 @@ serve(async (req) => {
       )
     }
 
-    // Decode base64 file data
-    const fileData = Uint8Array.from(atob(file.data), c => c.charCodeAt(0))
+    let documentType = ''
+    let filename = ''
+    let rawText = ''
 
-    // Validate file size
-    if (fileData.length > MAX_FILE_SIZE) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'FILE_TOO_LARGE',
-            message: `File size exceeds maximum of 50MB`,
-          },
-        } as ProcessResponse),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        }
-      )
-    }
-
-    console.log(`Processing ${file.name} (${documentType}, ${fileData.length} bytes)`)
-
-    // Limit file size for DOCX to prevent memory issues (mammoth loads entire file)
-    // DOCX files decompress to ~10x their size, so we need aggressive limits
-    const MAX_DOCX_SIZE = 500 * 1024 // 500KB for DOCX (decompresses to ~5MB)
-    if (documentType === 'docx' && fileData.length > MAX_DOCX_SIZE) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'FILE_TOO_LARGE',
-            message: `DOCX files larger than 500KB are not supported due to memory constraints. Please use a smaller document, split it into sections, or try PDF format instead.`,
-          },
-        } as ProcessResponse),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        }
-      )
-    }
-
-    // Stage 1: Parse document
-    const parseStart = Date.now()
-    let rawText: string
-
-    try {
-      switch (documentType) {
-        case 'pdf':
-          rawText = (await parsePDF(fileData.buffer)).text
-          break
-        case 'txt':
-          rawText = (await parseTXT(fileData.buffer)).text
-          break
-        case 'docx':
-          rawText = (await parseDOCX(fileData.buffer)).text
-          break
-        case 'xlsx':
-          rawText = (await parseXLSX(fileData.buffer)).text
-          break
-        default:
-          throw new Error(`Unsupported document type: ${documentType}`)
+    // Detect request type and process accordingly
+    if (extractedText) {
+      // Client-side extraction path
+      console.log(`Processing pre-extracted text from ${extractedText.filename} (${extractedText.metadata.characterCount} characters, extracted in ${extractedText.metadata.extractionTimeMs}ms)`)
+      
+      documentType = extractedText.documentType
+      filename = extractedText.filename
+      rawText = extractedText.text
+      
+      // Set parsing time to 0 for client-side extraction
+      stages.parsing = 0
+    } else if (file) {
+      // Server-side extraction path (existing logic)
+      if (!file.name || !file.type || !file.data) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'INVALID_REQUEST',
+              message: 'Missing required fields: file.name, file.type, file.data',
+            },
+          } as ProcessResponse),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        )
       }
-    } catch (error) {
-      console.error('Parse error:', error)
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'PARSE_FAILED',
-            message: `Failed to parse document: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          },
-        } as ProcessResponse),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        }
-      )
-    }
 
-    stages.parsing = Date.now() - parseStart
-    console.log(`Parsed document in ${stages.parsing}ms, extracted ${rawText.length} characters`)
+      // Validate file type
+      documentType = SUPPORTED_TYPES[file.type as keyof typeof SUPPORTED_TYPES]
+      if (!documentType) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'INVALID_FILE_TYPE',
+              message: `Unsupported file type: ${file.type}. Supported types: PDF, TXT, DOCX, XLSX`,
+            },
+          } as ProcessResponse),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        )
+      }
+
+      filename = file.name
+
+      // Decode base64 file data
+      const fileData = Uint8Array.from(atob(file.data), c => c.charCodeAt(0))
+
+      // Validate file size
+      if (fileData.length > MAX_FILE_SIZE) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'FILE_TOO_LARGE',
+              message: `File size exceeds maximum of 50MB`,
+            },
+          } as ProcessResponse),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        )
+      }
+
+      console.log(`Processing ${file.name} (${documentType}, ${fileData.length} bytes)`)
+
+      // Stage 1: Parse document
+      const parseStart = Date.now()
+
+      try {
+        switch (documentType) {
+          case 'pdf':
+            rawText = (await parsePDF(fileData.buffer)).text
+            break
+          case 'txt':
+            rawText = (await parseTXT(fileData.buffer)).text
+            break
+          case 'docx':
+            rawText = (await parseDOCX(fileData.buffer)).text
+            break
+          case 'xlsx':
+            rawText = (await parseXLSX(fileData.buffer)).text
+            break
+          default:
+            throw new Error(`Unsupported document type: ${documentType}`)
+        }
+      } catch (error) {
+        console.error('Parse error:', error)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'PARSE_FAILED',
+              message: `Failed to parse document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            },
+          } as ProcessResponse),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        )
+      }
+
+      stages.parsing = Date.now() - parseStart
+      console.log(`Parsed document in ${stages.parsing}ms, extracted ${rawText.length} characters`)
+    }
 
     // Truncate extremely large documents to prevent memory issues
     const MAX_TEXT_LENGTH = 100000 // 100k characters (~50 pages)
@@ -325,7 +369,7 @@ serve(async (req) => {
         success: true,
         wordlist: {
           words: wordPairs,
-          filename: file.name,
+          filename,
           documentType,
           wordCount: wordPairs.length,
         },

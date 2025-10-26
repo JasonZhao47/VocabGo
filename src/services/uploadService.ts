@@ -3,10 +3,15 @@
  * 
  * Handles document upload and processing through the process-document Edge Function.
  * This is a simplified MVP version that processes documents synchronously.
+ * 
+ * Hybrid Processing:
+ * - DOCX files: Client-side text extraction, then send text to Edge Function
+ * - Other files (PDF, TXT, XLSX): Server-side extraction (existing flow)
  */
 
 import { getSessionId } from '@/lib/session'
 import type { WordPair } from '@/types/database'
+import { extractDocxText, DocxExtractionError } from './docxExtractor'
 
 // Supported file types
 export const SUPPORTED_FILE_TYPES = {
@@ -16,7 +21,19 @@ export const SUPPORTED_FILE_TYPES = {
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
 } as const
 
-export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB (for non-DOCX files)
+export const MAX_DOCX_FILE_SIZE = 5 * 1024 * 1024 // 5MB (for DOCX files)
+
+// Request types for Edge Function
+interface PreExtractedDocument {
+  text: string
+  filename: string
+  documentType: 'docx'
+  metadata: {
+    characterCount: number
+    extractionTimeMs: number
+  }
+}
 
 // Response types matching Edge Function
 interface ProcessResponse {
@@ -84,11 +101,15 @@ export function validateFile(file: File): ValidationResult {
     }
   }
 
-  // Check file size
-  if (file.size > MAX_FILE_SIZE) {
+  // Check file size (different limits for DOCX vs other formats)
+  const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  const maxSize = isDocx ? MAX_DOCX_FILE_SIZE : MAX_FILE_SIZE
+  const maxSizeMB = isDocx ? 5 : 50
+
+  if (file.size > maxSize) {
     return {
       valid: false,
-      error: `File size exceeds maximum of 50MB`,
+      error: `File size exceeds maximum of ${maxSizeMB}MB`,
       code: 'FILE_TOO_LARGE',
     }
   }
@@ -114,19 +135,79 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Processes a document through the AI pipeline
- * 
- * @param file - The file to process
- * @returns Promise with the wordlist result
- * @throws Error if processing fails
+ * Process DOCX file with client-side extraction
+ * Extracts text in browser, then sends to Edge Function
  */
-export async function processDocument(file: File): Promise<ProcessResult> {
-  // Validate file
-  const validation = validateFile(file)
-  if (!validation.valid) {
-    throw new Error(validation.error)
-  }
+async function processDocxWithClientExtraction(file: File): Promise<ProcessResult> {
+  try {
+    // Extract text client-side
+    const extraction = await extractDocxText(file)
 
+    // Get session ID for anonymous access
+    const sessionId = getSessionId()
+
+    // Send extracted text to Edge Function
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          extractedText: {
+            text: extraction.text,
+            filename: file.name,
+            documentType: 'docx',
+            metadata: extraction.metadata,
+          } as PreExtractedDocument,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        errorData.error?.message || `HTTP error ${response.status}: ${response.statusText}`
+      )
+    }
+
+    const result: ProcessResponse = await response.json()
+
+    if (!result.success || !result.wordlist) {
+      throw new Error(result.error?.message || 'Processing failed')
+    }
+
+    return {
+      words: result.wordlist.words,
+      filename: result.wordlist.filename,
+      documentType: result.wordlist.documentType,
+      wordCount: result.wordlist.wordCount,
+      processingTimeMs: result.metadata?.processingTimeMs || 0,
+    }
+  } catch (error) {
+    // Handle extraction errors with user-friendly messages
+    if (error instanceof DocxExtractionError) {
+      throw new Error(error.message)
+    }
+
+    // Re-throw other errors
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error('An unexpected error occurred while processing the DOCX file')
+  }
+}
+
+/**
+ * Process file with server-side extraction (PDF, TXT, XLSX)
+ * Maintains backward compatibility with existing flow
+ */
+async function processWithServerExtraction(file: File): Promise<ProcessResult> {
   try {
     // Convert file to base64
     const base64Data = await fileToBase64(file)
@@ -184,5 +265,32 @@ export async function processDocument(file: File): Promise<ProcessResult> {
     }
     
     throw new Error('An unexpected error occurred while processing the document')
+  }
+}
+
+/**
+ * Processes a document through the AI pipeline
+ * Routes to client-side or server-side extraction based on file type
+ * 
+ * @param file - The file to process
+ * @returns Promise with the wordlist result
+ * @throws Error if processing fails
+ */
+export async function processDocument(file: File): Promise<ProcessResult> {
+  // Validate file
+  const validation = validateFile(file)
+  if (!validation.valid) {
+    throw new Error(validation.error)
+  }
+
+  // Route based on file type
+  const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  
+  if (isDocx) {
+    // Client-side extraction for DOCX
+    return processDocxWithClientExtraction(file)
+  } else {
+    // Server-side extraction for other formats
+    return processWithServerExtraction(file)
   }
 }

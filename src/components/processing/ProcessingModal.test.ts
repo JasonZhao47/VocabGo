@@ -129,7 +129,7 @@ describe('ProcessingModal Accessibility', () => {
 
       const progressBar = wrapper.find('[role="progressbar"]')
       expect(progressBar.exists()).toBe(true)
-      expect(progressBar.attributes('aria-valuenow')).toBe('66')
+      expect(progressBar.attributes('aria-valuenow')).toBe('75')
       expect(progressBar.attributes('aria-valuemin')).toBe('0')
       expect(progressBar.attributes('aria-valuemax')).toBe('100')
     })

@@ -4,7 +4,7 @@ import { reactive, computed } from 'vue'
 export type UploadStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'error'
 
 // Processing stages
-export type ProcessingStage = 'cleaning' | 'extracting' | 'translating'
+export type ProcessingStage = 'extracting-client' | 'cleaning' | 'extracting' | 'translating'
 
 export interface WordPair { 
   en: string
@@ -46,6 +46,11 @@ export function startUpload(file: File) {
 export function setProcessing(stage?: ProcessingStage) {
   state.status = 'processing'
   state.processingStage = stage || 'cleaning'
+}
+
+export function setExtracting() {
+  state.status = 'processing'
+  state.processingStage = 'extracting-client'
 }
 
 export function setProcessingStage(stage: ProcessingStage) {
