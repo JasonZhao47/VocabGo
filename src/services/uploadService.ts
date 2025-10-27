@@ -183,31 +183,30 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
 
-    try {
-      // Send extracted text to Edge Function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-ID': sessionId,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            extractedText: {
-              text: extraction.text,
-              filename: file.name,
-              documentType: 'docx',
-              metadata: extraction.metadata,
-            } as PreExtractedDocument,
-          }),
-          signal: controller.signal,
-        }
-      )
+    // Send extracted text to Edge Function
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          extractedText: {
+            text: extraction.text,
+            filename: file.name,
+            documentType: 'docx',
+            metadata: extraction.metadata,
+          } as PreExtractedDocument,
+        }),
+        signal: controller.signal,
+      }
+    )
 
-      clearTimeout(timeoutId)
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -218,11 +217,19 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
 
     const result: ProcessResponse = await response.json()
 
+    console.log('[uploadService] DOCX response:', {
+      success: result.success,
+      hasWordlist: !!result.wordlist,
+      wordCount: result.wordlist?.words?.length || 0,
+      error: result.error
+    })
+
     if (!result.success || !result.wordlist) {
+      console.error('[uploadService] Invalid DOCX response:', result)
       throw new Error(result.error?.message || 'Processing failed')
     }
 
-    return {
+    const processResult = {
       words: result.wordlist.words,
       filename: result.wordlist.filename,
       documentType: result.wordlist.documentType,
@@ -232,6 +239,13 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
       warnings: result.warnings,
       chunkingMetadata: result.metadata?.chunking,
     }
+
+    console.log('[uploadService] Returning DOCX result:', {
+      wordCount: processResult.words.length,
+      sampleWords: processResult.words.slice(0, 3)
+    })
+
+    return processResult
   } catch (error) {
     // Handle extraction errors with user-friendly messages
     if (error instanceof DocxExtractionError) {

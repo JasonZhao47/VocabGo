@@ -213,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, ref } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
@@ -272,25 +272,30 @@ const screenReaderAnnouncement = computed(() => {
   return ''
 })
 
+// Track if client-side extraction was used (for DOCX files)
+const usedClientExtraction = ref(false)
+
+// Watch for extracting-client stage to set the flag
+watch(() => uploadState.processingStage, (newStage) => {
+  if (newStage === 'extracting-client') {
+    usedClientExtraction.value = true
+  }
+})
+
+// Reset flag when modal closes
+watch(() => props.modelValue, (isOpen) => {
+  if (!isOpen) {
+    usedClientExtraction.value = false
+  }
+})
+
 // Processing stages configuration - dynamic based on whether client-side extraction is used
 const stages = computed(() => {
-  const currentStage = uploadState.processingStage
+  // For DOCX files with client-side extraction, skip the "Extracting" stage in the modal
+  // since extraction happens in the browser before the modal shows processing stages
+  // Show only: Cleaning → Extracting (LLM) → Translating
   
-  // Check if we're using client-side extraction (DOCX files)
-  // If current stage is extracting-client, or if we've passed it (cleaning/extracting/translating after client extraction)
-  const isUsingClientExtraction = currentStage === 'extracting-client'
-  
-  if (isUsingClientExtraction) {
-    // Show all stages including client-side extraction
-    return [
-      { id: 'extracting-client', label: 'Extracting' },
-      { id: 'cleaning', label: 'Cleaning' },
-      { id: 'extracting', label: 'Extracting' },
-      { id: 'translating', label: 'Translating' }
-    ] as const
-  }
-  
-  // Default stages without client-side extraction (for non-DOCX files)
+  // Default stages for all files (server-side or post-client-extraction)
   return [
     { id: 'cleaning', label: 'Cleaning' },
     { id: 'extracting', label: 'Extracting' },
@@ -303,8 +308,10 @@ const currentStageLabel = computed(() => {
   const stage = uploadState.processingStage
   if (!stage) return 'Processing'
   
+  // Skip extracting-client stage in display (it happens before modal shows)
+  if (stage === 'extracting-client') return 'Extracting text from document...'
+  
   const stageMap = {
-    'extracting-client': 'Extracting text from document...',
     cleaning: 'Cleaning Text',
     extracting: 'Extracting Words',
     translating: 'Translating'
@@ -318,8 +325,13 @@ const getStageState = (stageId: string) => {
   const currentStage = uploadState.processingStage
   if (!currentStage) return 'pending'
   
-  const stageOrder = ['extracting-client', 'cleaning', 'extracting', 'translating']
-  const currentIndex = stageOrder.indexOf(currentStage)
+  // Only track the 3 main stages shown in the modal (skip extracting-client)
+  const stageOrder = ['cleaning', 'extracting', 'translating']
+  
+  // If we're in extracting-client stage, treat it as before cleaning
+  const actualStage = currentStage === 'extracting-client' ? 'cleaning' : currentStage
+  
+  const currentIndex = stageOrder.indexOf(actualStage)
   const stageIndex = stageOrder.indexOf(stageId)
   
   if (stageIndex < currentIndex) return 'completed'
@@ -336,14 +348,14 @@ const progressPercentage = computed(() => {
     return Math.round((completed / total) * 100)
   }
   
-  // Otherwise use stage-based progress
+  // Otherwise use stage-based progress (3 stages: 33%, 66%, 100%)
   const stage = uploadState.processingStage
   if (!stage) return 0
   
   const stageProgress = {
-    'extracting-client': 25,
-    cleaning: 50,
-    extracting: 75,
+    'extracting-client': 10, // Brief client-side extraction (not shown in modal)
+    cleaning: 33,
+    extracting: 66,
     translating: 100
   }
   

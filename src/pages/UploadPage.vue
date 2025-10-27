@@ -296,8 +296,16 @@ const canUploadFile = computed(() => {
 })
 
 // Modal visibility - show when uploading, processing, or has error
+// Skip showing modal during brief client-side extraction stage
 const showProcessingModal = computed({
-  get: () => isUploading.value || isProcessingState.value || hasError.value,
+  get: () => {
+    // Don't show modal during the brief extracting-client stage (DOCX files)
+    // This prevents a jarring flash when transitioning to the main processing stages
+    if (isProcessingState.value && uploadState.processingStage === 'extracting-client') {
+      return false
+    }
+    return isUploading.value || isProcessingState.value || hasError.value
+  },
   set: (value: boolean) => {
     // Allow closing modal only when not actively processing
     if (!value && !isUploading.value && !isProcessingState.value) {
@@ -334,16 +342,13 @@ watch(isCompleted, (completed) => {
       // Navigate to result page
       router.push('/result')
       
-      // Reset state after navigation
-      setTimeout(() => {
-        resetUpload()
-        selectedFile.value = null
-        validationError.value = null
-        // Reset file input to allow selecting the same file again
-        if (fileInput.value) {
-          fileInput.value.value = ''
-        }
-      }, 100)
+      // Clear local UI state (but keep uploadState for ResultPage)
+      selectedFile.value = null
+      validationError.value = null
+      // Reset file input to allow selecting the same file again
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
     }, 500)
   }
 })

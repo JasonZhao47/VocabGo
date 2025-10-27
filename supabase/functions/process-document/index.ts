@@ -108,6 +108,7 @@ const SUPPORTED_TYPES = {
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_PDF_SIZE = 5 * 1024 * 1024 // 5MB - PDFs larger than this should use client-side extraction
 const MAX_CONCURRENT_CHUNKS = 3 // Process up to 3 chunks concurrently
 
 /**
@@ -567,6 +568,24 @@ serve(async (req) => {
           } as ProcessResponse),
           {
             status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        )
+      }
+
+      // Special handling for large PDFs - recommend client-side extraction
+      if (documentType === 'pdf' && fileData.length > MAX_PDF_SIZE) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: 'PDF_TOO_LARGE_FOR_SERVER',
+              message: `PDF files larger than 5MB must use client-side extraction to avoid memory issues. Please extract text on the client and send via the 'extractedText' parameter.`,
+              recommendation: 'USE_CLIENT_EXTRACTION'
+            },
+          } as ProcessResponse),
+          {
+            status: 413, // Payload Too Large
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           }
         )

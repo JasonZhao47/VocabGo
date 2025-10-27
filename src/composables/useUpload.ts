@@ -92,6 +92,14 @@ export function useUpload() {
       // Process document (actual API call)
       const result = await processDocument(file)
 
+      console.log('[useUpload] Processing result:', {
+        wordCount: result.words?.length || 0,
+        hasWords: !!result.words,
+        sampleWords: result.words?.slice(0, 3),
+        warnings: result.warnings,
+        chunkingMetadata: result.chunkingMetadata
+      })
+
       // Update chunk progress if available
       if (result.chunkProgress && result.chunkProgress.length > 0) {
         setChunkProgress(result.chunkProgress)
@@ -99,6 +107,11 @@ export function useUpload() {
 
       // Set completed state with results, warnings, and chunking metadata
       setCompleted(result.words, result.warnings, result.chunkingMetadata)
+      
+      console.log('[useUpload] State after setCompleted:', {
+        status: uploadState.status,
+        resultCount: uploadState.currentResult?.length || 0
+      })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)

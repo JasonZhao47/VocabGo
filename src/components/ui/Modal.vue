@@ -120,7 +120,7 @@ const backdropRef = ref<HTMLElement>()
 const isActive = ref(false)
 
 // Initialize modal animation composable
-const modalAnimation = useModalAnimation({ duration: 300, backdropBlur: true })
+const modalAnimation = useModalAnimation({ duration: 150, backdropBlur: true })
 const { shouldAnimate, getDuration } = useMotionPreference()
 
 // Initialize focus trap (Requirements: 13.1, 13.4)
