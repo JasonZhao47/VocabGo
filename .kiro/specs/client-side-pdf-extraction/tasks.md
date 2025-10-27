@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [-] 1. Create PDF extraction service
+- [x] 1. Create PDF extraction service
   - Create `src/services/pdfExtractor.ts` with core extraction logic
   - Implement PDF.js lazy loading from CDN with bundled fallback
   - Implement page-by-page text extraction with memory cleanup
@@ -9,15 +9,15 @@
   - Implement comprehensive error handling with user-friendly messages
   - _Requirements: FR2.1, FR2.2, FR2.3, FR4.1, FR4.2, NFR2.1, NFR3.1_
 
-- [ ] 2. Integrate PDF extraction into upload flow
-- [ ] 2.1 Add large PDF detection to useUpload composable
+- [x] 2. Integrate PDF extraction into upload flow
+- [x] 2.1 Add large PDF detection to useUpload composable
   - Add 5MB threshold constant for PDF size detection
   - Implement file size check in `handleFileUpload` function
   - Route large PDFs to client-side extraction flow
   - Maintain existing server-side upload for small PDFs
   - _Requirements: FR1.1, FR1.2, TC1.1, TC1.3_
 
-- [ ] 2.2 Implement client-side extraction workflow
+- [x] 2.2 Implement client-side extraction workflow
   - Create `handleLargePDFExtraction` function in useUpload
   - Add upload item to queue with "extracting" status
   - Call pdfExtractor with progress callbacks
@@ -25,7 +25,7 @@
   - Handle extraction completion and errors
   - _Requirements: FR2.1, FR2.2, FR3.1, FR5.1_
 
-- [ ] 2.3 Send extracted text to server
+- [x] 2.3 Send extracted text to server
   - Format extracted text with metadata for server
   - Send POST request to process-document edge function
   - Include filename, character count, and extraction time
@@ -33,7 +33,7 @@
   - Handle server response and update queue with results
   - _Requirements: FR3.1, FR3.2, FR3.3_
 
-- [ ] 3. Enhance ProcessingModal for extraction status
+- [x] 3. Enhance ProcessingModal for extraction status
   - Add UI for "extracting" status distinct from "processing"
   - Display extraction progress with page numbers (e.g., "Extracting page 5 of 30...")
   - Show progress bar for extraction phase
@@ -41,7 +41,7 @@
   - Display user-friendly message: "Large PDF detected, processing locally..."
   - _Requirements: FR1.3, FR2.4, FR5.1, FR5.5_
 
-- [ ] 4. Implement error handling and user feedback
+- [x] 4. Implement error handling and user feedback
   - Map PDF.js errors to user-friendly messages
   - Handle encrypted PDF error with clear message
   - Handle corrupted PDF error with actionable guidance
@@ -50,7 +50,7 @@
   - Display errors in ProcessingModal with dismiss action
   - _Requirements: FR4.1, FR4.2, FR4.3, FR4.4, FR5.4_
 
-- [ ] 5. Add TypeScript types and interfaces
+- [x] 5. Add TypeScript types and interfaces
   - Define PDFExtractionOptions interface
   - Define PDFExtractionProgress interface
   - Define PDFExtractionResult interface

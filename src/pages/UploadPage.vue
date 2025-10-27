@@ -4,6 +4,7 @@
     <ProcessingModal 
       v-model="showProcessingModal"
       @retry="handleRetry"
+      @cancel="handleCancel"
     />
 
     <!-- Main Content Area -->
@@ -200,7 +201,7 @@ import ProcessingModal from '@/components/processing/ProcessingModal.vue'
 
 const router = useRouter()
 const toast = useToast()
-const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload } = useUpload()
+const { canUpload, status, error, uploadFile, validateUploadFile, resetUpload, cancelUpload } = useUpload()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
@@ -329,6 +330,18 @@ function handleRetry() {
   if (fileInput.value) {
     fileInput.value.value = ''
   }
+}
+
+// Handle cancel action from modal
+function handleCancel() {
+  cancelUpload()
+  selectedFile.value = null
+  validationError.value = null
+  // Reset file input to allow selecting the same file again
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+  toast.info('Extraction cancelled')
 }
 
 // Watch for completion and handle success flow

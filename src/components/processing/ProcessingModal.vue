@@ -46,6 +46,88 @@
       </div>
     </div>
 
+    <!-- Extracting State Display (Client-side PDF extraction) -->
+    <div v-else-if="isExtracting" class="processing-modal-content">
+      <!-- File Info Section -->
+      <div class="file-info-section">
+        <div class="file-name">
+          <span v-if="uploadState.currentFile" class="file-name-text">
+            {{ uploadState.currentFile.name }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Local Processing Indicator -->
+      <div class="extraction-indicator">
+        <div class="extraction-icon">
+          <svg
+            class="extraction-icon-svg"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+        </div>
+        <p class="extraction-message">Large PDF detected, processing locally...</p>
+      </div>
+
+      <!-- Extraction Progress -->
+      <div v-if="uploadState.extractionProgress" class="extraction-progress-section">
+        <p class="extraction-progress-label">
+          Extracting page {{ uploadState.extractionProgress.currentPage }} of {{ uploadState.extractionProgress.totalPages }}...
+        </p>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+          <div class="progress-bar-track">
+            <div
+              class="progress-bar-fill"
+              :style="{ width: `${extractionProgressPercentage}%` }"
+              role="progressbar"
+              :aria-valuenow="extractionProgressPercentage"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="`Extracting page ${uploadState.extractionProgress.currentPage} of ${uploadState.extractionProgress.totalPages}`"
+            />
+          </div>
+        </div>
+
+        <!-- Extraction Stats -->
+        <div class="extraction-stats">
+          <span class="extraction-stat-item">
+            {{ formatCharCount(uploadState.extractionProgress.extractedChars) }} extracted
+          </span>
+          <span v-if="uploadState.extractionProgress.estimatedTimeMs > 0" class="extraction-stat-item">
+            ~{{ formatTime(uploadState.extractionProgress.estimatedTimeMs) }} remaining
+          </span>
+        </div>
+      </div>
+
+      <!-- Fallback message if no progress data yet -->
+      <div v-else class="text-center">
+        <p class="status-message">Preparing to extract PDF text...</p>
+      </div>
+
+      <!-- Cancel Button -->
+      <div class="extraction-actions">
+        <Button
+          variant="ghost"
+          :size="buttonSize"
+          full-width
+          @click="handleCancel"
+        >
+          Cancel Extraction
+        </Button>
+      </div>
+    </div>
+
     <!-- Processing State Display -->
     <div v-else-if="isProcessing" class="processing-modal-content">
       <!-- File Info Section -->
@@ -218,7 +300,7 @@ import Modal from '@/components/ui/Modal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Button from '@/components/ui/Button.vue'
-import uploadState, { isUploading, isProcessing, hasError } from '@/state/uploadState'
+import uploadState, { isUploading, isExtracting, isProcessing, hasError } from '@/state/uploadState'
 import { announcePolite, announceError } from '@/utils/accessibilityAnnouncer'
 
 interface Props {
@@ -228,6 +310,7 @@ interface Props {
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
   (e: 'retry'): void
+  (e: 'cancel'): void
 }
 
 const props = defineProps<Props>()
@@ -235,12 +318,13 @@ const emit = defineEmits<Emits>()
 
 // Computed property for modal visibility based on uploadState
 const isActiveProcessing = computed(() => 
-  isUploading.value || isProcessing.value
+  isUploading.value || isExtracting.value || isProcessing.value
 )
 
 const modalTitle = computed(() => {
   if (hasError.value) return 'Processing Failed'
   if (isUploading.value) return 'Uploading Document'
+  if (isExtracting.value) return 'Extracting PDF'
   if (isProcessing.value) return 'Processing Document'
   return 'Processing'
 })
@@ -258,6 +342,11 @@ const handleClose = () => {
   emit('update:modelValue', false)
 }
 
+const handleCancel = () => {
+  emit('cancel')
+  emit('update:modelValue', false)
+}
+
 // Screen reader announcement
 const screenReaderAnnouncement = computed(() => {
   if (hasError.value) {
@@ -265,6 +354,12 @@ const screenReaderAnnouncement = computed(() => {
   }
   if (isUploading.value) {
     return `Uploading document ${uploadState.currentFile?.name || ''}`
+  }
+  if (isExtracting.value) {
+    if (uploadState.extractionProgress) {
+      return `Extracting page ${uploadState.extractionProgress.currentPage} of ${uploadState.extractionProgress.totalPages}`
+    }
+    return 'Extracting PDF text'
   }
   if (isProcessing.value) {
     return `Processing stage: ${currentStageLabel.value}`
@@ -393,10 +488,46 @@ const buttonSize = computed(() => {
   return 'md'
 })
 
+// Extraction progress percentage
+const extractionProgressPercentage = computed(() => {
+  if (!uploadState.extractionProgress) return 0
+  const { currentPage, totalPages } = uploadState.extractionProgress
+  return Math.round((currentPage / totalPages) * 100)
+})
+
+// Format character count for display
+const formatCharCount = (chars: number): string => {
+  if (chars < 1000) return `${chars} chars`
+  if (chars < 1000000) return `${(chars / 1000).toFixed(1)}K chars`
+  return `${(chars / 1000000).toFixed(1)}M chars`
+}
+
+// Format time in milliseconds to human-readable format
+const formatTime = (ms: number): string => {
+  const seconds = Math.ceil(ms / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
+}
+
 // Watch for status changes and announce to screen readers
 watch(isUploading, (newValue) => {
   if (newValue && uploadState.currentFile) {
     announcePolite(`Uploading document ${uploadState.currentFile.name}`)
+  }
+})
+
+watch(isExtracting, (newValue) => {
+  if (newValue) {
+    announcePolite('Large PDF detected, extracting text locally')
+  }
+})
+
+watch(() => uploadState.extractionProgress, (progress) => {
+  if (progress && progress.currentPage % 5 === 0) {
+    // Announce every 5 pages to avoid overwhelming screen readers
+    announcePolite(`Extracting page ${progress.currentPage} of ${progress.totalPages}`)
   }
 })
 
@@ -463,6 +594,140 @@ defineExpose({
   background-color: rgb(249, 250, 251);
   border-radius: 8px;
   text-align: center;
+}
+
+/* Extraction Indicator */
+.extraction-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgb(249, 250, 251) 0%, rgb(243, 244, 246) 100%);
+  border-radius: 12px;
+  border: 1px solid rgb(229, 231, 235);
+}
+
+@media (max-width: 767px) {
+  .extraction-indicator {
+    padding: 16px;
+    gap: 10px;
+  }
+}
+
+.extraction-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0, 0, 0);
+  border-radius: 12px;
+  animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (max-width: 767px) {
+  .extraction-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+.extraction-icon-svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+@media (max-width: 767px) {
+  .extraction-icon-svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.extraction-message {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgb(17, 24, 39);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .extraction-message {
+    font-size: 0.875rem;
+  }
+}
+
+/* Extraction Progress Section */
+.extraction-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background-color: rgb(249, 250, 251);
+  border-radius: 8px;
+}
+
+@media (max-width: 767px) {
+  .extraction-progress-section {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+.extraction-progress-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgb(17, 24, 39);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .extraction-progress-label {
+    font-size: 0.875rem;
+  }
+}
+
+.extraction-stats {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .extraction-stats {
+    gap: 12px;
+  }
+}
+
+.extraction-stat-item {
+  font-size: 0.875rem;
+  color: rgb(75, 85, 99);
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .extraction-stat-item {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Extraction Actions */
+.extraction-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .extraction-actions :deep(button) {
+    min-height: 44px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
 }
 
 @media (max-width: 767px) {
@@ -783,6 +1048,17 @@ defineExpose({
   }
 }
 
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
 @keyframes scale-in {
   0% {
     transform: scale(1);
@@ -882,7 +1158,8 @@ defineExpose({
   .stage-circle,
   .progress-bar-fill,
   .stage-fade-enter-active,
-  .stage-fade-leave-active {
+  .stage-fade-leave-active,
+  .extraction-icon {
     transition: none;
     animation: none;
   }

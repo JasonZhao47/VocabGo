@@ -1,10 +1,14 @@
 import { reactive, computed } from 'vue'
+import type { PDFExtractionProgress } from '@/services/pdfExtractor'
 
 // Simplified status for single upload at a time
-export type UploadStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'error'
+export type UploadStatus = 'idle' | 'uploading' | 'extracting' | 'processing' | 'completed' | 'error'
 
 // Processing stages
 export type ProcessingStage = 'extracting-client' | 'cleaning' | 'extracting' | 'translating'
+
+// Re-export PDF extraction progress type for convenience
+export type ExtractionProgress = PDFExtractionProgress
 
 export interface WordPair { 
   en: string
@@ -38,6 +42,7 @@ export interface UploadState {
   isChunked: boolean
   warnings: string[]
   chunkingMetadata: ChunkingMetadata | null
+  extractionProgress: ExtractionProgress | null
 }
 
 const state = reactive<UploadState>({
@@ -49,11 +54,13 @@ const state = reactive<UploadState>({
   chunkProgress: [],
   isChunked: false,
   warnings: [],
-  chunkingMetadata: null
+  chunkingMetadata: null,
+  extractionProgress: null
 })
 
 // Computed properties
 export const isUploading = computed(() => state.status === 'uploading')
+export const isExtracting = computed(() => state.status === 'extracting')
 export const isProcessing = computed(() => state.status === 'processing')
 export const isCompleted = computed(() => state.status === 'completed')
 export const hasError = computed(() => state.status === 'error')
@@ -70,6 +77,16 @@ export function startUpload(file: File) {
   state.isChunked = false
   state.warnings = []
   state.chunkingMetadata = null
+  state.extractionProgress = null
+}
+
+export function setExtractingPDF(progress?: ExtractionProgress) {
+  state.status = 'extracting'
+  state.extractionProgress = progress || null
+}
+
+export function updateExtractionProgress(progress: ExtractionProgress) {
+  state.extractionProgress = progress
 }
 
 export function setProcessing(stage?: ProcessingStage) {
@@ -118,6 +135,7 @@ export function reset() {
   state.isChunked = false
   state.warnings = []
   state.chunkingMetadata = null
+  state.extractionProgress = null
 }
 
 export default state
