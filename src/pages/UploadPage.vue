@@ -304,6 +304,10 @@ const showProcessingModal = computed({
       resetUpload()
       selectedFile.value = null
       validationError.value = null
+      // Reset file input to allow selecting the same file again
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
     }
   }
 })
@@ -313,6 +317,10 @@ function handleRetry() {
   resetUpload()
   selectedFile.value = null
   validationError.value = null
+  // Reset file input to allow selecting the same file again
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
 // Watch for completion and handle success flow
@@ -331,6 +339,10 @@ watch(isCompleted, (completed) => {
         resetUpload()
         selectedFile.value = null
         validationError.value = null
+        // Reset file input to allow selecting the same file again
+        if (fileInput.value) {
+          fileInput.value.value = ''
+        }
       }, 100)
     }, 500)
   }

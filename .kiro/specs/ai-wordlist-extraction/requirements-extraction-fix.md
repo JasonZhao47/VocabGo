@@ -1,24 +1,8 @@
-# Requirements Document - DEPRECATED
+# Requirements Document - AI Wordlist Extraction Fix
 
-## ⚠️ This file has been split into two separate specs:
+## Introduction
 
-1. **Extraction Fix**: `.kiro/specs/ai-wordlist-extraction/requirements-extraction-fix.md`
-   - Fixes the 0-word extraction bug
-   - Improves parsing logic and prompts
-   - Adds fallback mechanisms
-
-2. **Adjustable Word Count**: `.kiro/specs/adjustable-word-count/requirements.md`
-   - Adds slider UI for word count selection
-   - Implements localStorage persistence
-   - Updates backend to accept variable word counts
-
-Please refer to the individual spec files above.
-
----
-
-## Original Introduction (Deprecated)
-
-The AI wordlist extraction system has two critical issues: (1) it's failing to extract English words from documents that clearly contain English vocabulary, and (2) the hardcoded 40-word limit is too restrictive for users who want more comprehensive wordlists. The system needs both a fix for the extraction failure and a user-configurable word count setting with a slider interface.
+The AI wordlist extraction system is failing to extract English words from documents that clearly contain English vocabulary. The system processes documents but returns 0 words with NaN confidence, despite the LLM receiving and processing the text. This spec addresses the core extraction failure by fixing the parsing logic, improving prompts, and adding fallback mechanisms.
 
 ## Glossary
 
@@ -27,8 +11,6 @@ The AI wordlist extraction system has two critical issues: (1) it's failing to e
 - **LLM Response**: The text content returned by the GLM-4-Flash API
 - **Word Parsing Logic**: The code that processes the LLM response to extract individual words
 - **Stop Words**: Common English words that should be filtered out (e.g., "the", "and", "is")
-- **Word Count Setting**: User-configurable parameter that determines the maximum number of words to extract from a document
-- **Slider Control**: A draggable UI component that allows users to adjust the word count setting
 
 ## Requirements
 
@@ -101,39 +83,3 @@ The AI wordlist extraction system has two critical issues: (1) it's failing to e
 3. WHEN the LLM response exceeds expected length, THE System SHALL log a warning about unexpected response format
 4. WHEN extraction completes, THE System SHALL track tokens-per-word ratio for quality monitoring
 5. WHERE token consumption exceeds 10,000 tokens for a single extraction, THE System SHALL log a warning for investigation
-
-### Requirement 7: Implement Adjustable Word Count Setting
-
-**User Story:** As a user, I want to control how many words are extracted from my document using a slider, so that I can get more or fewer words based on my needs.
-
-#### Acceptance Criteria
-
-1. WHEN the upload page loads, THE System SHALL display a slider control labeled "Words to extract" with the current value shown
-2. WHEN the user drags the slider, THE System SHALL update the displayed value in real-time
-3. WHEN the user adjusts the slider, THE System SHALL allow values between 10 and 200 words
-4. WHEN no custom value is set, THE System SHALL default to 40 words
-5. WHEN the user uploads a document, THE System SHALL pass the selected word count to the extraction agent
-
-### Requirement 8: Persist User Word Count Preference
-
-**User Story:** As a user, I want my word count preference to be remembered across sessions, so that I don't have to adjust it every time.
-
-#### Acceptance Criteria
-
-1. WHEN the user changes the word count slider, THE System SHALL save the value to browser localStorage
-2. WHEN the upload page loads, THE System SHALL retrieve the saved word count preference from localStorage
-3. WHEN no saved preference exists, THE System SHALL use the default value of 40 words
-4. WHEN the user clears browser data, THE System SHALL revert to the default value of 40 words
-5. WHEN the saved value is outside the valid range, THE System SHALL clamp it to the nearest valid value (10-200)
-
-### Requirement 9: Update Backend to Accept Variable Word Count
-
-**User Story:** As a system, I want to accept word count as a parameter in the document processing request, so that extraction can be customized per upload.
-
-#### Acceptance Criteria
-
-1. WHEN the process-document function receives a request, THE System SHALL accept an optional maxWords parameter
-2. WHEN maxWords is not provided, THE System SHALL default to 40 words for backward compatibility
-3. WHEN maxWords is provided, THE System SHALL validate it is between 10 and 200
-4. WHEN maxWords is invalid, THE System SHALL return an error response with code INVALID_WORD_COUNT
-5. WHEN calling the extractor agent, THE System SHALL pass the validated maxWords value

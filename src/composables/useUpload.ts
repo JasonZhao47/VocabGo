@@ -13,6 +13,7 @@ import uploadState, {
   setExtracting,
   setCompleted,
   setError,
+  setChunkProgress,
   reset,
   canUpload as canUploadComputed,
 } from '@/state/uploadState'
@@ -91,8 +92,13 @@ export function useUpload() {
       // Process document (actual API call)
       const result = await processDocument(file)
 
-      // Set completed state with results
-      setCompleted(result.words)
+      // Update chunk progress if available
+      if (result.chunkProgress && result.chunkProgress.length > 0) {
+        setChunkProgress(result.chunkProgress)
+      }
+
+      // Set completed state with results, warnings, and chunking metadata
+      setCompleted(result.words, result.warnings, result.chunkingMetadata)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)

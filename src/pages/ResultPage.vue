@@ -20,6 +20,21 @@
       </div>
     </div>
 
+    <!-- Warning Banner for Partial Failures (Task 7) -->
+    <div v-if="warnings.length > 0" data-animate-child class="warning-banner">
+      <div class="warning-icon">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="warning-content">
+        <p class="warning-title">Partial Results</p>
+        <p class="warning-message">{{ warnings[0] }}</p>
+        <!-- Show chunk summary if available -->
+        <p v-if="chunkSummary" class="warning-details">{{ chunkSummary }}</p>
+      </div>
+    </div>
+
     <!-- Loading Skeleton (Task 11.2) -->
     <div v-if="isProcessing" class="table-container">
       <WordlistTableSkeleton :rows="8" />
@@ -120,6 +135,20 @@ const wordPairs = computed(() => uploadState.currentResult || [])
 const filename = computed(() => uploadState.currentFile?.name || 'Unknown Document')
 const wordCount = computed(() => wordPairs.value.length)
 
+// Warning display for partial failures (Task 7)
+const warnings = computed(() => uploadState.warnings || [])
+const chunkSummary = computed(() => {
+  if (!uploadState.chunkingMetadata) return null
+  
+  const { successfulChunks, failedChunks, totalChunks } = uploadState.chunkingMetadata
+  
+  if (failedChunks > 0) {
+    return `${failedChunks} of ${totalChunks} sections could not be processed`
+  }
+  
+  return null
+})
+
 const { saveCurrentWordlist } = useWordlist()
 
 const isExporting = ref(false)
@@ -213,6 +242,57 @@ function getDocumentType(filename: string): string {
   .result-header {
     margin-bottom: 40px;
   }
+}
+
+/* Warning Banner for Partial Failures (Task 7) */
+.warning-banner {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background-color: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .warning-banner {
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  color: #D97706;
+}
+
+.warning-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.warning-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400E;
+  margin-bottom: 4px;
+  letter-spacing: 0;
+}
+
+.warning-message {
+  font-size: 14px;
+  font-weight: 400;
+  color: #78350F;
+  margin-bottom: 4px;
+  letter-spacing: 0;
+}
+
+.warning-details {
+  font-size: 13px;
+  font-weight: 400;
+  color: #92400E;
+  letter-spacing: 0;
 }
 
 .result-label {

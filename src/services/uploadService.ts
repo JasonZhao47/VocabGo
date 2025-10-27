@@ -35,6 +35,16 @@ interface PreExtractedDocument {
   }
 }
 
+// Chunk progress tracking
+export interface ChunkProgress {
+  chunkId: string
+  position: number
+  totalChunks: number
+  status: 'processing' | 'completed' | 'failed'
+  wordsExtracted?: number
+  error?: string
+}
+
 // Response types matching Edge Function
 interface ProcessResponse {
   success: boolean
@@ -52,11 +62,31 @@ interface ProcessResponse {
     processingTimeMs: number
     stages: {
       parsing: number
-      cleaning: number
-      extraction: number
-      translation: number
+      cleaning?: number
+      extraction?: number
+      translation?: number
+      chunking?: number
+      processing?: number
+      combining?: number
     }
+    chunking?: {
+      totalChunks: number
+      successfulChunks: number
+      failedChunks: number
+      averageChunkSize: number
+      duplicatesRemoved: number
+    }
+    chunkProgress?: ChunkProgress[]
   }
+  warnings?: string[]
+}
+
+export interface ChunkingMetadata {
+  totalChunks: number
+  successfulChunks: number
+  failedChunks: number
+  averageChunkSize: number
+  duplicatesRemoved: number
 }
 
 export interface ProcessResult {
@@ -65,6 +95,9 @@ export interface ProcessResult {
   documentType: string
   wordCount: number
   processingTimeMs: number
+  chunkProgress?: ChunkProgress[]
+  warnings?: string[]
+  chunkingMetadata?: ChunkingMetadata
 }
 
 export interface ValidationError {
@@ -146,27 +179,35 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
     // Get session ID for anonymous access
     const sessionId = getSessionId()
 
-    // Send extracted text to Edge Function
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          extractedText: {
-            text: extraction.text,
-            filename: file.name,
-            documentType: 'docx',
-            metadata: extraction.metadata,
-          } as PreExtractedDocument,
-        }),
-      }
-    )
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+
+    try {
+      // Send extracted text to Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': sessionId,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            extractedText: {
+              text: extraction.text,
+              filename: file.name,
+              documentType: 'docx',
+              metadata: extraction.metadata,
+            } as PreExtractedDocument,
+          }),
+          signal: controller.signal,
+        }
+      )
+
+      clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -187,6 +228,9 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
       documentType: result.wordlist.documentType,
       wordCount: result.wordlist.wordCount,
       processingTimeMs: result.metadata?.processingTimeMs || 0,
+      chunkProgress: result.metadata?.chunkProgress,
+      warnings: result.warnings,
+      chunkingMetadata: result.metadata?.chunking,
     }
   } catch (error) {
     // Handle extraction errors with user-friendly messages
@@ -255,6 +299,9 @@ async function processWithServerExtraction(file: File): Promise<ProcessResult> {
       documentType: result.wordlist.documentType,
       wordCount: result.wordlist.wordCount,
       processingTimeMs: result.metadata?.processingTimeMs || 0,
+      chunkProgress: result.metadata?.chunkProgress,
+      warnings: result.warnings,
+      chunkingMetadata: result.metadata?.chunking,
     }
   } catch (error) {
     console.error('Upload service error:', error)

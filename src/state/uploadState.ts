@@ -11,12 +11,33 @@ export interface WordPair {
   zh: string 
 }
 
+export interface ChunkProgress {
+  chunkId: string
+  position: number
+  totalChunks: number
+  status: 'processing' | 'completed' | 'failed'
+  wordsExtracted?: number
+  error?: string
+}
+
+export interface ChunkingMetadata {
+  totalChunks: number
+  successfulChunks: number
+  failedChunks: number
+  averageChunkSize: number
+  duplicatesRemoved: number
+}
+
 export interface UploadState {
   status: UploadStatus
   currentFile: File | null
   currentResult: WordPair[] | null
   error: string | null
   processingStage: ProcessingStage | null
+  chunkProgress: ChunkProgress[]
+  isChunked: boolean
+  warnings: string[]
+  chunkingMetadata: ChunkingMetadata | null
 }
 
 const state = reactive<UploadState>({
@@ -24,7 +45,11 @@ const state = reactive<UploadState>({
   currentFile: null,
   currentResult: null,
   error: null,
-  processingStage: null
+  processingStage: null,
+  chunkProgress: [],
+  isChunked: false,
+  warnings: [],
+  chunkingMetadata: null
 })
 
 // Computed properties
@@ -41,6 +66,10 @@ export function startUpload(file: File) {
   state.currentResult = null
   state.error = null
   state.processingStage = null
+  state.chunkProgress = []
+  state.isChunked = false
+  state.warnings = []
+  state.chunkingMetadata = null
 }
 
 export function setProcessing(stage?: ProcessingStage) {
@@ -57,11 +86,19 @@ export function setProcessingStage(stage: ProcessingStage) {
   state.processingStage = stage
 }
 
-export function setCompleted(wordPairs: WordPair[]) {
+export function setCompleted(wordPairs: WordPair[], warnings?: string[], chunkingMetadata?: ChunkingMetadata) {
   state.status = 'completed'
   state.currentResult = wordPairs
   state.error = null
   state.processingStage = null
+  state.warnings = warnings || []
+  state.chunkingMetadata = chunkingMetadata || null
+  // Keep chunk progress for display in completed state
+}
+
+export function setChunkProgress(progress: ChunkProgress[]) {
+  state.chunkProgress = progress
+  state.isChunked = progress.length > 0
 }
 
 export function setError(errorMessage: string) {
@@ -77,6 +114,10 @@ export function reset() {
   state.currentResult = null
   state.error = null
   state.processingStage = null
+  state.chunkProgress = []
+  state.isChunked = false
+  state.warnings = []
+  state.chunkingMetadata = null
 }
 
 export default state

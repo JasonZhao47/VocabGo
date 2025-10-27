@@ -57,8 +57,53 @@
         </div>
       </div>
 
-      <!-- Stage Label -->
-      <div class="text-center">
+      <!-- Chunk Progress Display (if chunked) -->
+      <div v-if="uploadState.isChunked && uploadState.chunkProgress.length > 0" class="chunk-progress-section">
+        <p class="chunk-progress-label">
+          Processing chunk {{ completedChunks + 1 }} of {{ totalChunks }}
+        </p>
+        <div class="chunk-status-grid">
+          <div
+            v-for="chunk in uploadState.chunkProgress"
+            :key="chunk.chunkId"
+            :class="[
+              'chunk-status-indicator',
+              {
+                'chunk-completed': chunk.status === 'completed',
+                'chunk-failed': chunk.status === 'failed',
+                'chunk-processing': chunk.status === 'processing'
+              }
+            ]"
+            :aria-label="`Chunk ${chunk.position} - ${chunk.status}`"
+          >
+            <svg
+              v-if="chunk.status === 'completed'"
+              class="chunk-icon"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg
+              v-else-if="chunk.status === 'failed'"
+              class="chunk-icon"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <div v-else class="chunk-spinner" />
+          </div>
+        </div>
+        <p class="chunk-summary-text">
+          {{ successfulChunks }} successful, {{ failedChunks }} failed
+        </p>
+      </div>
+
+      <!-- Stage Label (for non-chunked or before chunk info available) -->
+      <div v-else class="text-center">
         <Transition name="stage-fade" mode="out-in">
           <p :key="currentStageLabel" class="stage-label">
             {{ currentStageLabel }}
@@ -282,8 +327,16 @@ const getStageState = (stageId: string) => {
   return 'pending'
 }
 
-// Calculate progress percentage based on stage
+// Calculate progress percentage based on stage or chunk progress
 const progressPercentage = computed(() => {
+  // If we have chunk progress, calculate based on chunks
+  if (uploadState.isChunked && uploadState.chunkProgress.length > 0) {
+    const total = uploadState.chunkProgress.length
+    const completed = uploadState.chunkProgress.filter(c => c.status === 'completed' || c.status === 'failed').length
+    return Math.round((completed / total) * 100)
+  }
+  
+  // Otherwise use stage-based progress
   const stage = uploadState.processingStage
   if (!stage) return 0
   
@@ -296,6 +349,18 @@ const progressPercentage = computed(() => {
   
   return stageProgress[stage] || 0
 })
+
+// Chunk progress computed properties
+const totalChunks = computed(() => uploadState.chunkProgress.length)
+const completedChunks = computed(() => 
+  uploadState.chunkProgress.filter(c => c.status === 'completed' || c.status === 'failed').length
+)
+const successfulChunks = computed(() => 
+  uploadState.chunkProgress.filter(c => c.status === 'completed').length
+)
+const failedChunks = computed(() => 
+  uploadState.chunkProgress.filter(c => c.status === 'failed').length
+)
 
 // Responsive spinner size
 const spinnerSize = computed(() => {
@@ -411,6 +476,129 @@ defineExpose({
 @media (max-width: 767px) {
   .file-name-text {
     font-size: 0.875rem; /* 14px - text-sm */
+  }
+}
+
+/* Chunk Progress Section */
+.chunk-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background-color: rgb(249, 250, 251);
+  border-radius: 8px;
+}
+
+@media (max-width: 767px) {
+  .chunk-progress-section {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+.chunk-progress-label {
+  font-size: 1rem; /* 16px - text-base */
+  font-weight: 600;
+  color: rgb(17, 24, 39); /* gray-900 */
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .chunk-progress-label {
+    font-size: 0.875rem; /* 14px - text-sm */
+  }
+}
+
+.chunk-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+  gap: 8px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 767px) {
+  .chunk-status-grid {
+    gap: 6px;
+    max-width: 300px;
+  }
+}
+
+.chunk-status-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 767px) {
+  .chunk-status-indicator {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.chunk-completed {
+  background-color: rgb(34, 197, 94); /* green-500 */
+  color: white;
+}
+
+.chunk-failed {
+  background-color: rgb(239, 68, 68); /* red-500 */
+  color: white;
+}
+
+.chunk-processing {
+  background-color: rgb(0, 0, 0);
+  color: white;
+}
+
+.chunk-icon {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 767px) {
+  .chunk-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.chunk-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 767px) {
+  .chunk-spinner {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chunk-summary-text {
+  font-size: 0.875rem; /* 14px - text-sm */
+  color: rgb(75, 85, 99); /* gray-600 */
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .chunk-summary-text {
+    font-size: 0.8125rem; /* 13px */
   }
 }
 
