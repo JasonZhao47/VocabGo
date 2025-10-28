@@ -55,13 +55,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePageTransition } from '@/composables/usePageTransition'
 import { useNavigation } from '@/composables/useNavigation'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
 import { useWebVitals } from '@/composables/useWebVitals'
 import { usePerformanceMonitor } from '@/utils/performanceMonitor'
+import { getSessionId } from '@/lib/session'
 
 // Lazy load layout components for better initial load performance
 const Sidebar = defineAsyncComponent(() => import('@/components/layout/Sidebar.vue'))
@@ -151,6 +152,13 @@ const navItems = [
 
 // Set navigation items
 setNavigationItems(navItems)
+
+// Initialize session on app mount
+onMounted(() => {
+  // Ensure session ID is created when app loads
+  // This is needed for anonymous access to work properly
+  getSessionId()
+})
 
 // Toggle mobile sidebar
 const toggleMobileSidebar = () => {

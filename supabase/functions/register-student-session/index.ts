@@ -124,7 +124,9 @@ serve(async (req) => {
     }
 
     // Validate device info
+    console.log('Received deviceInfo:', JSON.stringify(deviceInfo))
     if (!validateDeviceInfo(deviceInfo)) {
+      console.error('Device info validation failed:', deviceInfo)
       return new Response(
         JSON.stringify({
           success: false,

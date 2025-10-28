@@ -75,7 +75,7 @@
 
         <!-- Multiple-Choice Question -->
         <div v-else-if="question.type === 'multiple-choice'" class="multiple-choice-question">
-          <p class="sentence">{{ question.question }}</p>
+          <p class="sentence" v-html="question.question"></p>
           <div class="options-list">
             <button
               v-for="(option, optIndex) in question.options"
@@ -125,7 +125,7 @@
 import { ref, computed } from 'vue'
 import type { PracticeQuestions } from '@/types/practice'
 import { transformQuestionsForView, type TransformedQuestion } from '@/utils/questionTransform'
-import { recordPracticeMistake } from '@/services/practiceQuestionService'
+import { useStudentSession } from '@/composables/useStudentSession'
 
 // Props
 interface Props {
@@ -142,6 +142,9 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+// Use student session composable for recording mistakes
+const { recordMistake } = useStudentSession()
 
 // State for answers
 interface MatchingAnswer {
@@ -344,7 +347,7 @@ async function validateMatch(
     // Record mistake (find correct translation)
     const correctPair = pairs.find(p => p.english === english)
     if (correctPair) {
-      await recordPracticeMistake(props.wordlistId, english, correctPair.mandarin, 'matching')
+      await recordMistake(props.wordlistId, english, correctPair.mandarin, 'matching')
     }
     
     // Clear incorrect state after animation
@@ -391,7 +394,7 @@ async function handleSubmit() {
           )
         )
         for (const pair of unmatchedPairs) {
-          await recordPracticeMistake(
+          await recordMistake(
             props.wordlistId,
             pair.english,
             pair.mandarin,
@@ -413,7 +416,7 @@ async function handleSubmit() {
         const translation = question.sentence!.includes('(') 
           ? question.sentence!.match(/\((.+?)\)/)?.[1] || word
           : word
-        await recordPracticeMistake(
+        await recordMistake(
           props.wordlistId,
           word,
           translation,
@@ -433,7 +436,7 @@ async function handleSubmit() {
         const sentenceParts = question.question!.match(/["'](.+?)["']/)
         const word = sentenceParts ? sentenceParts[1] : question.question!.split(' ')[0]
         const translation = correctOption?.text || ''
-        await recordPracticeMistake(
+        await recordMistake(
           props.wordlistId,
           word,
           translation,
@@ -594,6 +597,14 @@ async function handleSubmit() {
   font-size: 15px;
   color: #000000;
   margin-bottom: 16px;
+}
+
+.sentence :deep(strong) {
+  font-weight: 700;
+  color: #000000;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .fill-blank-input {

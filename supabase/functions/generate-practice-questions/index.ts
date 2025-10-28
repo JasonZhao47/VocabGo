@@ -51,6 +51,7 @@ const DEFAULT_QUESTION_TYPES: ('matching' | 'fill-blank' | 'multiple-choice')[] 
   'fill-blank',
   'multiple-choice',
 ]
+const MAX_TOTAL_QUESTIONS = 10 // Maximum total questions across all types
 const CACHE_DURATION_HOURS = 24 // Cache questions for 24 hours
 
 serve(async (req) => {
@@ -101,7 +102,24 @@ serve(async (req) => {
     }
 
     const questionTypes = body.questionTypes || DEFAULT_QUESTION_TYPES
-    const maxQuestionsPerType = body.maxQuestionsPerType || 10
+    
+    // Calculate questions per type to stay within total limit of ~10 questions
+    // Note: Matching always generates 1 exercise (with 4-5 pairs inside)
+    // Strategy for all 3 types:
+    // - 1 matching exercise (with 5 pairs) + 4 fill-blank + 4 multiple-choice = ~10 total
+    let maxQuestionsPerType: number
+    if (body.maxQuestionsPerType) {
+      maxQuestionsPerType = body.maxQuestionsPerType
+    } else if (questionTypes.includes('matching')) {
+      // When matching is included, allocate remaining questions to other types
+      // Matching always gets 1 exercise, so distribute ~8-9 questions among others
+      const nonMatchingTypes = questionTypes.filter(t => t !== 'matching').length
+      maxQuestionsPerType = nonMatchingTypes > 0 ? Math.floor(8 / nonMatchingTypes) : 10
+    } else {
+      // No matching - distribute evenly
+      const questionsPerType = Math.floor(MAX_TOTAL_QUESTIONS / questionTypes.length)
+      maxQuestionsPerType = questionsPerType
+    }
 
     // Validate question types
     const validTypes = ['matching', 'fill-blank', 'multiple-choice']

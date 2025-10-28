@@ -163,8 +163,9 @@ interface PendingMistake {
 const pendingMistakes: PendingMistake[] = []
 const recordedMistakes: Set<string> = new Set()
 let batchTimeout: ReturnType<typeof setTimeout> | null = null
-const BATCH_DELAY_MS = 500 // Wait 500ms before sending batch
-const MAX_BATCH_SIZE = 10 // Send batch if it reaches 10 items
+const BATCH_DELAY_MS = 1000 // Wait 1 second before sending batch (increased from 500ms)
+const MAX_BATCH_SIZE = 20 // Send batch if it reaches 20 items (increased from 10)
+const REQUEST_DELAY_MS = 200 // Delay between individual requests (increased from 100ms)
 
 /**
  * Record a practice mistake (batched and rate-limited)
@@ -236,9 +237,9 @@ async function sendMistakeBatch(): Promise<void> {
   for (let i = 0; i < batch.length; i++) {
     const mistake = batch[i]
     
-    // Add small delay between requests (100ms) to avoid rate limiting
+    // Add delay between requests to avoid rate limiting
     if (i > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS))
     }
     
     try {

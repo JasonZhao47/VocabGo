@@ -179,24 +179,80 @@ serve(async (req) => {
     // Check if anonymous mode is enabled
     const anonymousMode = wordlist.share_settings?.anonymous_mode ?? false
 
-    // Query 1: Get aggregate mistakes from materialized view
-    let aggregateQuery = supabaseClient
-      .from('wordlist_mistake_summary')
-      .select('word, translation, student_count, total_mistakes, avg_mistakes_per_student')
+    // Query 1: Get aggregate mistakes by querying practice_mistakes directly
+    // Note: This replaces the materialized view which was causing permission issues
+    const { data: rawMistakes, error: rawError } = await supabaseClient
+      .from('practice_mistakes')
+      .select('word, translation, student_session_id')
       .eq('wordlist_id', wordlistId)
-      .order('total_mistakes', { ascending: false })
-      .limit(50) // Limit to top 50 most-missed words
-
-    const { data: aggregateMistakes, error: aggregateError } = await aggregateQuery
-
-    if (aggregateError) {
-      console.error('Aggregate mistakes query error:', aggregateError)
+    
+    if (rawError) {
+      console.error('Raw mistakes query error:', rawError)
       return new Response(
         JSON.stringify({
           success: false,
           error: {
             code: 'DATABASE_ERROR',
-            message: `Failed to fetch aggregate mistakes: ${aggregateError.message}`,
+            message: `Failed to fetch mistakes: ${rawError.message}`,
+          },
+        } as PracticeStatsResponse),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        }
+      )
+    }
+    
+    // Aggregate mistakes in memory (replaces materialized view logic)
+    const mistakeMap = new Map<string, {
+      word: string
+      translation: string
+      student_count: number
+      total_mistakes: number
+      sessions: Set<string>
+    }>()
+    
+    for (const mistake of rawMistakes || []) {
+      const key = `${mistake.word}|${mistake.translation}`
+      const existing = mistakeMap.get(key)
+      
+      if (existing) {
+        existing.total_mistakes++
+        existing.sessions.add(mistake.student_session_id)
+        existing.student_count = existing.sessions.size
+      } else {
+        mistakeMap.set(key, {
+          word: mistake.word,
+          translation: mistake.translation,
+          total_mistakes: 1,
+          student_count: 1,
+          sessions: new Set([mistake.student_session_id])
+        })
+      }
+    }
+    
+    // Convert to array and calculate avg_mistakes_per_student
+    const aggregateMistakes = Array.from(mistakeMap.values())
+      .map(({ word, translation, student_count, total_mistakes }) => ({
+        word,
+        translation,
+        student_count,
+        total_mistakes,
+        avg_mistakes_per_student: total_mistakes / student_count
+      }))
+      .sort((a, b) => b.total_mistakes - a.total_mistakes)
+      .slice(0, 50) // Limit to top 50 most-missed words
+
+    // aggregateMistakes is now computed above
+    
+    if (false) { // Remove this dead code block
+      console.error('Aggregate mistakes query error:', null)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'DATABASE_ERROR',
+            message: `Failed to fetch aggregate mistakes: error`,
           },
         } as PracticeStatsResponse),
         {

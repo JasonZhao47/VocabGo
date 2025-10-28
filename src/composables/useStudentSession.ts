@@ -21,6 +21,7 @@ export interface DeviceInfo {
   userAgent: string
   screenResolution: string
   timezone: string
+  studentId?: string // Optional student identifier from URL parameter
 }
 
 export interface WordPair {
@@ -62,13 +63,25 @@ let isInitialized = false
 
 /**
  * Get device fingerprint information
+ * Includes optional studentId from URL parameter for same-device differentiation
  */
 function getDeviceInfo(): DeviceInfo {
-  return {
+  // Extract studentId from URL query parameter if present
+  const urlParams = new URLSearchParams(window.location.search)
+  const studentId = urlParams.get('student')
+  
+  const deviceInfo: DeviceInfo = {
     userAgent: navigator.userAgent,
     screenResolution: `${window.screen.width}x${window.screen.height}`,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }
+  
+  // Only include studentId if it exists (avoid sending undefined which becomes null in JSON)
+  if (studentId) {
+    deviceInfo.studentId = studentId
+  }
+  
+  return deviceInfo
 }
 
 /**

@@ -76,7 +76,7 @@
         <Card class="stat-card" variant="gradient-border">
           <div class="stat-content">
             <div class="stat-value">{{ stats.totalPractices }}</div>
-            <div class="stat-label">Practice Sessions</div>
+            <div class="stat-label">Total Mistakes</div>
           </div>
           <div class="stat-icon">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +112,7 @@
           <template #empty>
             <div class="empty-state">
               <p class="empty-text">No mistakes recorded yet</p>
-              <p class="empty-hint">Students haven't made any mistakes yet. Check back after practice sessions.</p>
+              <p class="empty-hint">{{ stats.totalStudents > 0 ? 'Students have registered but haven\'t practiced yet.' : 'Share your wordlist to get students started!' }}</p>
             </div>
           </template>
         </DataTable>
@@ -335,9 +335,9 @@ function handleExportCSV() {
   if (!stats.value) return
 
   try {
-    // Build CSV content
-    const headers = ['Word', 'Translation', 'Students Affected', 'Total Mistakes', 'Avg per Student']
-    const rows = [...stats.value.aggregateMistakes].map(m => [
+    // Build aggregate CSV content
+    const aggregateHeaders = ['Word', 'Translation', 'Students Affected', 'Total Mistakes', 'Avg per Student']
+    const aggregateRows = [...stats.value.aggregateMistakes].map(m => [
       m.word,
       m.translation,
       m.studentCount.toString(),
@@ -345,9 +345,31 @@ function handleExportCSV() {
       m.avgPerStudent.toFixed(2),
     ])
 
+    // Build per-student CSV content
+    const studentHeaders = ['Student Name', 'Word', 'Translation', 'Mistake Count', 'Last Active']
+    const studentRows: string[][] = []
+    
+    stats.value.students.forEach(student => {
+      student.topMistakes.forEach(mistake => {
+        studentRows.push([
+          student.nickname,
+          mistake.word,
+          mistake.translation,
+          mistake.count.toString(),
+          new Date(student.lastActive).toLocaleString(),
+        ])
+      })
+    })
+
+    // Combine both sections with a separator
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      '# Aggregate Mistake Summary',
+      aggregateHeaders.join(','),
+      ...aggregateRows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      '',
+      '# Per-Student Breakdown',
+      studentHeaders.join(','),
+      ...studentRows.map(row => row.map(cell => `"${cell}"`).join(',')),
     ].join('\n')
 
     // Create download link

@@ -44,7 +44,8 @@ describe('usePracticeStats', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorageMock.clear()
-    localStorageMock.setItem('session_id', mockSessionId)
+    // Use the correct key that matches session.ts
+    localStorageMock.setItem('vocabgo_session_id', mockSessionId)
     
     // Clear the cache between tests
     const { clearCache } = usePracticeStats(mockWordlistId)
@@ -173,15 +174,34 @@ describe('usePracticeStats', () => {
       expect(error.value).toBe('Network error')
     })
 
-    it('should handle missing session ID', async () => {
-      localStorageMock.removeItem('session_id')
+    it('should auto-generate session ID if missing', async () => {
+      localStorageMock.removeItem('vocabgo_session_id')
 
-      const { error, fetchStats } = usePracticeStats(mockWordlistId)
+      const mockStats: FetchStatsResponse = {
+        success: true,
+        wordlistId: mockWordlistId,
+        totalStudents: 0,
+        totalPractices: 0,
+        students: [],
+        aggregateMistakes: [],
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockStats,
+      })
+
+      const { fetchStats } = usePracticeStats(mockWordlistId)
       const result = await fetchStats()
 
-      expect(result).toBeNull()
-      expect(error.value).toBe('No active session. Please log in.')
-      expect(mockFetch).not.toHaveBeenCalled()
+      // Should auto-generate session ID and make the request
+      expect(result).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalled()
+      
+      // Verify session ID was generated and stored
+      const sessionId = localStorageMock.getItem('vocabgo_session_id')
+      expect(sessionId).toBeTruthy()
+      expect(sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
     })
   })
 
@@ -470,15 +490,49 @@ describe('usePracticeStats', () => {
       expect(error.value).toBe('Network error')
     })
 
-    it('should handle missing session ID', async () => {
-      localStorageMock.removeItem('session_id')
+    it('should auto-generate session ID if missing', async () => {
+      localStorageMock.removeItem('vocabgo_session_id')
 
-      const { error, generateFromMistakes } = usePracticeStats(mockWordlistId)
+      const mockResponse: GenerateQuestionsResponse = {
+        success: true,
+        questions: {
+          matching: [],
+          fillBlank: [],
+          multipleChoice: [],
+        },
+        targetWords: [],
+        metadata: {
+          generationTimeMs: 500,
+          wordCount: 0,
+          questionCounts: {
+            matching: 0,
+            fillBlank: 0,
+            multipleChoice: 0,
+          },
+          filteredByStudents: false,
+          mistakeStats: {
+            totalMistakes: 0,
+            studentCount: 0,
+          },
+        },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      })
+
+      const { generateFromMistakes } = usePracticeStats(mockWordlistId)
       const result = await generateFromMistakes()
 
-      expect(result).toBeNull()
-      expect(error.value).toBe('No active session. Please log in.')
-      expect(mockFetch).not.toHaveBeenCalled()
+      // Should auto-generate session ID and make the request
+      expect(result).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalled()
+      
+      // Verify session ID was generated and stored
+      const sessionId = localStorageMock.getItem('vocabgo_session_id')
+      expect(sessionId).toBeTruthy()
+      expect(sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
     })
   })
 })

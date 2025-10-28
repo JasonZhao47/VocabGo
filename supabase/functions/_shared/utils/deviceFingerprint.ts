@@ -12,6 +12,7 @@ export interface DeviceInfo {
   userAgent: string
   screenResolution: string
   timezone: string
+  studentId?: string // Optional student identifier from URL parameter
 }
 
 /**
@@ -26,10 +27,12 @@ export interface DeviceInfo {
  */
 export async function generateSessionToken(deviceInfo: DeviceInfo): Promise<string> {
   // Normalize and concatenate device info
+  // Include studentId if provided to differentiate students on same device
   const fingerprint = [
     deviceInfo.userAgent || '',
     deviceInfo.screenResolution || '',
-    deviceInfo.timezone || ''
+    deviceInfo.timezone || '',
+    deviceInfo.studentId || '' // Add student identifier to fingerprint
   ].join('|')
   
   // Convert to Uint8Array for hashing
@@ -80,8 +83,8 @@ export function validateDeviceInfo(deviceInfo: DeviceInfo): boolean {
     return false
   }
   
-  // All fields must be present and non-empty strings
-  return Boolean(
+  // Required fields must be present and non-empty strings
+  const hasRequiredFields = Boolean(
     deviceInfo.userAgent &&
     typeof deviceInfo.userAgent === 'string' &&
     deviceInfo.userAgent.trim().length > 0 &&
@@ -92,6 +95,16 @@ export function validateDeviceInfo(deviceInfo: DeviceInfo): boolean {
     typeof deviceInfo.timezone === 'string' &&
     deviceInfo.timezone.trim().length > 0
   )
+  
+  // studentId is optional, but if provided must be a non-empty string
+  // Note: undefined becomes null in JSON, so check for both
+  if (deviceInfo.studentId !== undefined && deviceInfo.studentId !== null) {
+    return hasRequiredFields && 
+           typeof deviceInfo.studentId === 'string' &&
+           deviceInfo.studentId.trim().length > 0
+  }
+  
+  return hasRequiredFields
 }
 
 /**

@@ -31,8 +31,7 @@ const router = createRouter({
     { 
       path: '/dashboard/:wordlistId', 
       name: 'practice-dashboard', 
-      component: () => import('@/pages/PracticeDashboard.vue'),
-      meta: { requiresSession: true }
+      component: () => import('@/pages/PracticeDashboard.vue')
     },
     { 
       path: '/practice/:shareToken', 

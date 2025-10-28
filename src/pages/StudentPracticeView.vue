@@ -148,6 +148,9 @@ const { showToast } = useToast()
 // Get share token from route
 const shareToken = computed(() => route.params.shareToken as string)
 
+// Get optional student ID from query parameter
+const studentId = computed(() => route.query.student as string | undefined)
+
 // Student session composable
 const {
   nickname: studentNickname,

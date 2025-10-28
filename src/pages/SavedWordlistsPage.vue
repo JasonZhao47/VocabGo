@@ -738,7 +738,6 @@ function handleShareDisabled(wordlistId: string) {
   align-items: center;
   justify-content: center;
   padding: 96px 24px;
-  background: rgb(250, 250, 250);
   border-radius: 12px;
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -30,7 +30,7 @@ interface RecordMistakeResponse {
 // Rate limiting: Track requests per session token
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10
+const RATE_LIMIT_MAX_REQUESTS = 60 // Allow 60 requests per minute (1 per second average)
 
 /**
  * Check if request should be rate limited
@@ -168,12 +168,16 @@ serve(async (req) => {
       )
     }
 
-    // Look up student session by session token
+    // Look up student session by session token and wordlist
+    // Use wordlist_id to ensure we get the correct session if multiple exist
     const { data: session, error: sessionError } = await supabaseClient
       .from('student_sessions')
       .select('id, wordlist_id')
       .eq('session_token', sessionToken)
-      .single()
+      .eq('wordlist_id', wordlistId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
     if (sessionError || !session) {
       console.error('Session lookup error:', sessionError)

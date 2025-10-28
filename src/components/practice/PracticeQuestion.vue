@@ -2,7 +2,7 @@
   <div class="practice-question">
     <!-- Multiple Choice -->
     <div v-if="question.type === 'multiple-choice'" class="question-card">
-      <h3 class="question-title">{{ question.sentence }}</h3>
+      <h3 class="question-title" v-html="question.sentence"></h3>
       <div class="options-grid">
         <button
           v-for="(option, index) in question.options"
@@ -197,6 +197,14 @@ function getWordFromQuestion(): {
   font-weight: 600;
   margin-bottom: 24px;
   color: #1a1a1a;
+}
+
+.question-title :deep(strong) {
+  font-weight: 700;
+  color: #000000;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .sentence {

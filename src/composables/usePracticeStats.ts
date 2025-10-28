@@ -130,13 +130,24 @@ const statsCache = new Map<string, CacheEntry>()
 
 /**
  * Get session ID from localStorage
+ * Uses the same key as session.ts for consistency
  */
 function getSessionId(): string | null {
   try {
-    return localStorage.getItem('session_id')
+    // Use the same key as session.ts
+    let sessionId = localStorage.getItem('vocabgo_session_id')
+    
+    // If no session ID exists, generate one
+    if (!sessionId) {
+      sessionId = crypto.randomUUID()
+      localStorage.setItem('vocabgo_session_id', sessionId)
+    }
+    
+    return sessionId
   } catch (err) {
     console.error('Failed to get session ID from localStorage:', err)
-    return null
+    // Fallback: generate a temporary session ID for this session
+    return crypto.randomUUID()
   }
 }
 
@@ -197,20 +208,22 @@ export function usePracticeStats(wordlistId: string) {
 
     try {
       const sessionId = getSessionId()
-      if (!sessionId) {
-        throw new Error('No active session. Please log in.')
-      }
 
       const url = new URL(`${API_BASE_URL}/functions/v1/fetch-practice-stats`)
       url.searchParams.set('wordlistId', wordlistId)
       url.searchParams.set('dateRange', dateRange)
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (sessionId) {
+        headers['x-session-id'] = sessionId
+      }
+
       const response = await fetch(url.toString(), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': sessionId,
-        },
+        headers,
       })
 
       const data: FetchStatsResponse = await response.json()
@@ -264,16 +277,18 @@ export function usePracticeStats(wordlistId: string) {
 
     try {
       const sessionId = getSessionId()
-      if (!sessionId) {
-        throw new Error('No active session. Please log in.')
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (sessionId) {
+        headers['x-session-id'] = sessionId
       }
 
       const response = await fetch(`${API_BASE_URL}/functions/v1/generate-questions-from-mistakes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': sessionId,
-        },
+        headers,
         body: JSON.stringify({
           wordlistId,
           topN,

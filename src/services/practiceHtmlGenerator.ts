@@ -178,6 +178,14 @@ export class PracticeHtmlGenerator {
       margin-bottom: 16px;
     }
 
+    .question-content strong {
+      font-weight: 700;
+      color: #000000;
+      background: #fef3c7;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
     .options {
       display: flex;
       flex-direction: column;
@@ -451,8 +459,9 @@ export class PracticeHtmlGenerator {
       const contentDiv = document.getElementById(\`question-\${index}\`);
 
       if (question.type === 'multiple-choice') {
+        // Render sentence with HTML (to support <strong> tags for bold words)
         contentDiv.innerHTML = \`
-          <p style="margin-bottom: 16px;">\${escapeHtml(question.sentence)}</p>
+          <p style="margin-bottom: 16px;">\${question.sentence}</p>
           <div class="options" id="options-\${index}"></div>
         \`;
 

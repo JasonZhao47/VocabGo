@@ -214,3 +214,137 @@ Deno.test('integration - generate and validate token', async () => {
   assertEquals(validateSessionToken(token), true)
   assertValidSessionToken(token) // Should not throw
 })
+
+// Tests for studentId parameter (URL-based differentiation)
+
+Deno.test('generateSessionToken - generates different tokens with different studentId', async () => {
+  const baseDevice: DeviceInfo = {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    screenResolution: '1920x1080',
+    timezone: 'America/New_York'
+  }
+  
+  const device1 = { ...baseDevice, studentId: 'john' }
+  const device2 = { ...baseDevice, studentId: 'mary' }
+  
+  const token1 = await generateSessionToken(device1)
+  const token2 = await generateSessionToken(device2)
+  
+  assertEquals(token1 === token2, false)
+})
+
+Deno.test('generateSessionToken - generates different token with vs without studentId', async () => {
+  const baseDevice: DeviceInfo = {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    screenResolution: '1920x1080',
+    timezone: 'America/New_York'
+  }
+  
+  const deviceWithoutId = baseDevice
+  const deviceWithId = { ...baseDevice, studentId: 'alice' }
+  
+  const token1 = await generateSessionToken(deviceWithoutId)
+  const token2 = await generateSessionToken(deviceWithId)
+  
+  assertEquals(token1 === token2, false)
+})
+
+Deno.test('generateSessionToken - generates consistent tokens with same studentId', async () => {
+  const deviceInfo: DeviceInfo = {
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    screenResolution: '2560x1440',
+    timezone: 'Asia/Shanghai',
+    studentId: 'bob'
+  }
+  
+  const token1 = await generateSessionToken(deviceInfo)
+  const token2 = await generateSessionToken(deviceInfo)
+  
+  assertEquals(token1, token2)
+})
+
+Deno.test('generateSessionToken - studentId is case-sensitive', async () => {
+  const baseDevice: DeviceInfo = {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    screenResolution: '1920x1080',
+    timezone: 'America/New_York'
+  }
+  
+  const device1 = { ...baseDevice, studentId: 'John' }
+  const device2 = { ...baseDevice, studentId: 'john' }
+  
+  const token1 = await generateSessionToken(device1)
+  const token2 = await generateSessionToken(device2)
+  
+  assertEquals(token1 === token2, false)
+})
+
+Deno.test('validateDeviceInfo - accepts valid device info with studentId', () => {
+  const validInfo: DeviceInfo = {
+    userAgent: 'Mozilla/5.0',
+    screenResolution: '1920x1080',
+    timezone: 'UTC',
+    studentId: 'alice'
+  }
+  assertEquals(validateDeviceInfo(validInfo), true)
+})
+
+Deno.test('validateDeviceInfo - accepts device info without studentId', () => {
+  const validInfo: DeviceInfo = {
+    userAgent: 'Mozilla/5.0',
+    screenResolution: '1920x1080',
+    timezone: 'UTC'
+  }
+  assertEquals(validateDeviceInfo(validInfo), true)
+})
+
+Deno.test('validateDeviceInfo - rejects empty studentId', () => {
+  const invalidInfo: DeviceInfo = {
+    userAgent: 'Mozilla/5.0',
+    screenResolution: '1920x1080',
+    timezone: 'UTC',
+    studentId: ''
+  }
+  assertEquals(validateDeviceInfo(invalidInfo), false)
+})
+
+Deno.test('validateDeviceInfo - rejects whitespace-only studentId', () => {
+  const invalidInfo: DeviceInfo = {
+    userAgent: 'Mozilla/5.0',
+    screenResolution: '1920x1080',
+    timezone: 'UTC',
+    studentId: '   '
+  }
+  assertEquals(validateDeviceInfo(invalidInfo), false)
+})
+
+Deno.test('integration - same device, different students via studentId', async () => {
+  const baseDevice: DeviceInfo = {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    screenResolution: '1920x1080',
+    timezone: 'America/New_York'
+  }
+  
+  // Simulate three students on the same device
+  const student1 = { ...baseDevice, studentId: 'alice' }
+  const student2 = { ...baseDevice, studentId: 'bob' }
+  const student3 = { ...baseDevice, studentId: 'charlie' }
+  
+  const token1 = await generateSessionToken(student1)
+  const token2 = await generateSessionToken(student2)
+  const token3 = await generateSessionToken(student3)
+  
+  // All tokens should be valid
+  assertEquals(validateSessionToken(token1), true)
+  assertEquals(validateSessionToken(token2), true)
+  assertEquals(validateSessionToken(token3), true)
+  
+  // All tokens should be different
+  assertEquals(token1 === token2, false)
+  assertEquals(token2 === token3, false)
+  assertEquals(token1 === token3, false)
+  
+  // Each student should get the same token consistently
+  const token1Again = await generateSessionToken(student1)
+  assertEquals(token1, token1Again)
+})

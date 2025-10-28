@@ -64,7 +64,7 @@ export interface GenerateQuestionsResponse {
 }
 
 // Constants
-const MAX_QUESTIONS_PER_TYPE = 10
+const MAX_QUESTIONS_PER_TYPE = 10 // Maximum 10 questions per practice session
 const MIN_WORDS_FOR_QUESTIONS = 4
 
 /**
@@ -90,8 +90,12 @@ export async function generatePracticeQuestions(
   let questionTypeCount = 0
 
   // Generate matching questions
+  // Note: Matching always generates 1 exercise (with multiple pairs inside)
   if (questionTypes.includes('matching')) {
-    const result = await generateMatchingQuestions(words, maxQuestionsPerType)
+    // For matching, maxQuestionsPerType represents the number of pairs in the exercise
+    // Default to 5 pairs if not specified, but respect explicit limits
+    const matchingPairCount = Math.min(maxQuestionsPerType || 5, words.length)
+    const result = await generateMatchingQuestions(words, matchingPairCount)
     questions.matching = result.questions
     totalConfidence += result.confidence
     questionTypeCount++
@@ -128,15 +132,17 @@ export async function generatePracticeQuestions(
 
 /**
  * Generate matching questions
+ * Note: Creates one matching exercise with up to maxQuestions pairs
+ * Each pair tests one individual word
  */
 export async function generateMatchingQuestions(
   words: WordPair[],
   maxQuestions: number
 ): Promise<{ questions: MatchingQuestion[]; confidence: number }> {
-  // Limit to max questions
+  // Limit to max 10 pairs per matching exercise
   const selectedWords = words.slice(0, Math.min(maxQuestions, words.length))
 
-  // Create matching question
+  // Create matching question with individual word pairs
   const pairs = selectedWords.map(word => ({
     english: word.en,
     mandarin: word.zh,
@@ -248,6 +254,11 @@ The sentence should demonstrate proper usage and be at an intermediate English l
 
 Words: ${wordList}
 
+IMPORTANT RULES:
+- Each question tests ONLY ONE WORD from the list
+- Only the target word should be replaced with ___
+- The sentence should provide clear context for the missing word
+
 For each word, provide:
 1. A sentence with ___ where the word should go
 2. The correct answer (the word itself)
@@ -282,6 +293,8 @@ For each word below, create:
 Words to test: ${wordList}
 
 IMPORTANT RULES:
+- Each question tests ONLY ONE WORD from the list
+- In the sentence, wrap the target word with <strong> tags to make it bold (e.g., "The <strong>sunset</strong> was beautiful.")
 - Do NOT use any words from this list as distractors: ${allWords.map(w => w.en).join(', ')}
 - Distractors should be semantically related but clearly incorrect
 - Distractors should be plausible translations that a learner might confuse
@@ -289,7 +302,7 @@ IMPORTANT RULES:
 Format your response as JSON:
 [
   {
-    "sentence": "The sunset was very beautiful.",
+    "sentence": "The <strong>sunset</strong> was very beautiful.",
     "targetWord": "sunset",
     "options": [
       {"text": "日落", "isCorrect": true},
