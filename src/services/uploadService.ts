@@ -179,9 +179,9 @@ async function processDocxWithClientExtraction(file: File): Promise<ProcessResul
     // Get session ID for anonymous access
     const sessionId = getSessionId()
 
-    // Create abort controller for timeout
+    // Create abort controller for timeout (5 minutes for large documents)
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
 
     // Send extracted text to Edge Function
     const response = await fetch(
@@ -273,6 +273,10 @@ async function processWithServerExtraction(file: File): Promise<ProcessResult> {
     // Get session ID for anonymous access
     const sessionId = getSessionId()
 
+    // Create abort controller for timeout (5 minutes for large documents)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
+
     // Call process-document Edge Function
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
@@ -291,8 +295,11 @@ async function processWithServerExtraction(file: File): Promise<ProcessResult> {
             data: base64Data,
           },
         }),
+        signal: controller.signal,
       }
     )
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
